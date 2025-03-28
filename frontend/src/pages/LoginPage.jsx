@@ -1,13 +1,31 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 
-function LoginPage() {
+function LoginPage({ onLogin }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Email:', email, 'Password:', password); // Debug: Kiểm tra giá trị email và password
+    const success = onLogin(email, password);
+    console.log('Login success:', success); // Debug: Kiểm tra giá trị trả về của onLogin
+    if (success) {
+      navigate('/customer', { replace: true }); // Chuyển hướng đến trang khách hàng
+    } else {
+      setError('Email hoặc mật khẩu không đúng!');
+    }
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-form">
         <h2 className="auth-title">Đăng Nhập</h2>
-        <form className="form-content">
+        {error && <p className="error-message">{error}</p>}
+        <form className="form-content" onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">
               Email <span className="required">(*)</span>
@@ -16,6 +34,8 @@ function LoginPage() {
               type="email"
               className="form-input"
               placeholder="Nhập email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -28,6 +48,8 @@ function LoginPage() {
               type="password"
               className="form-input"
               placeholder="Nhập mật khẩu"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>

@@ -1,0 +1,127 @@
+/* Chatbox.css */
+
+/* Container chính của chatbox */
+.chatbox-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+  }
+  
+  /* Nút mở chatbox */
+  .chatbox-toggle {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    transition: background 0.3s;
+  }
+  
+  .chatbox-toggle:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Chatbox khi mở */
+  .chatbox {
+    width: 300px;
+    height: 400px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Header của chatbox */
+  .chatbox-header {
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .chatbox-header h3 {
+    margin: 0;
+    font-size: 16px;
+  }
+  
+  .chatbox-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  /* Body của chatbox */
+  .chatbox-body {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    background: #f0f2f5;
+  }
+  
+  .chatbox-body p {
+    color: #555;
+    font-size: 14px;
+  }
+  
+  /* Tin nhắn */
+  .chatbox-message {
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    max-width: 80%;
+    word-wrap: break-word;
+  }
+  
+  .user-message {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto;
+    text-align: right;
+  }
+  
+  .system-message {
+    background-color: #e9ecef;
+    color: #333;
+    margin-right: auto;
+  }
+  
+  /* Form nhập tin nhắn */
+  .chatbox-form {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+  }
+  
+  .chatbox-form input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px 0 0 5px;
+    font-size: 14px;
+    outline: none;
+  }
+  
+  .chatbox-form button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  .chatbox-form button:hover {
+    background-color: #0056b3;
+  }
