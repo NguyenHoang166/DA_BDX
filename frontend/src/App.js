@@ -25,15 +25,15 @@ function App() {
   const dropdownRef = useRef(null);
 
   const handleLogin = (email, password) => {
-    if (email === 'test@example.com' && password === 'password123') {
+    if (email === 'test@example.com' && password === '123456') {
       console.log('Login successful, setting isLoggedIn to true');
       setIsLoggedIn(true);
       setUser({
         email: email,
-        name: 'Nguyễn Văn A',
+        name: 'Nguyễn Hoàng',
         phone: '0123 456 789',
         address: '123 Đường Láng, Đống Đa, Hà Nội',
-        role: '123456789',
+        role: 'Người dùng',
         gender: 'Nam',
         dob: '01/01/2000',
         cccd: '123456789012',

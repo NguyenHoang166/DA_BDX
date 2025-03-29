@@ -8,8 +8,8 @@ function ProfilePage({ user, setUser }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    name: user?.name || 'Nguyễn Văn A',
-    role: user?.role || '123456789',
+    name: user?.name || 'Nguyễn Hoàng',
+    role: user?.role || 'Người dùng',
     gender: user?.gender || 'Nam',
     dob: user?.dob || '01/01/2000',
     cccd: user?.cccd || '123456789012',
