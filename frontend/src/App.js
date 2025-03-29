@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import logo from './assets/logo.png';
-import defaultAvatar from './assets/image 1.png'; // Thêm ảnh avatar mặc định
+import defaultAvatar from './assets/image 1.png';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -9,6 +9,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import CustomerPage from './Customer/CustomerPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import ProfilePage from './pages/ProfilePage';
+import ParkingSelectionPage from './pages/ParkingSelectionPage';
 import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
 
 // Component bảo vệ route
@@ -25,6 +26,7 @@ function App() {
 
   const handleLogin = (email, password) => {
     if (email === 'test@example.com' && password === 'password123') {
+      console.log('Login successful, setting isLoggedIn to true');
       setIsLoggedIn(true);
       setUser({
         email: email,
@@ -35,10 +37,11 @@ function App() {
         gender: 'Nam',
         dob: '01/01/2000',
         cccd: '123456789012',
-        avatar: defaultAvatar, // Thêm avatar mặc định
+        avatar: defaultAvatar,
       });
       return true;
     }
+    console.log('Login failed');
     return false;
   };
 
@@ -52,7 +55,6 @@ function App() {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  // Đóng dropdown khi nhấn ra ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -107,7 +109,7 @@ function App() {
 
         {/* Routes */}
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<HomePage isLoggedIn={isLoggedIn} />} />
           <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -124,7 +126,15 @@ function App() {
             path="/profile"
             element={
               <PrivateRoute isLoggedIn={isLoggedIn}>
-                <ProfilePage user={user} setUser={setUser} /> {/* Truyền setUser để cập nhật avatar */}
+                <ProfilePage user={user} setUser={setUser} />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/parking-selection"
+            element={
+              <PrivateRoute isLoggedIn={isLoggedIn}>
+                <ParkingSelectionPage />
               </PrivateRoute>
             }
           />

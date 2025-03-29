@@ -1,0 +1,26 @@
+.parking-selection-page {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .parking-selection-page h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  
+  .parking-selection-page p {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .parking-selection-page ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .parking-selection-page li {
+    background-color: #f0f0f0;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+  }

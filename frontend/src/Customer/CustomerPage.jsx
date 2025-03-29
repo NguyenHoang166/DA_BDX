@@ -1,23 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; 
 import parkingLotImage from '../assets/image.png';
 import './CustomerPage.css';
 import Chatbox from '../components/Chatbox';
 
 function CustomerPage() {
-  const [vehicleType, setVehicleType] = React.useState('Xe máy');
-  const [startDate, setStartDate] = React.useState('2025-03-02T07:00');
-  const [endDate, setEndDate] = React.useState('2025-03-02T13:00');
-  const [successMessage, setSuccessMessage] = React.useState('');
+  const [vehicleType, setVehicleType] = useState('Xe máy');
+  const [startDate, setStartDate] = useState('2025-03-02T07:00');
+  const [endDate, setEndDate] = useState('2025-03-02T13:00');
+  const navigate = useNavigate(); // Khởi tạo useNavigate
+
+  const handleBookNow = (selectedVehicleType = vehicleType) => {
+    const bookingData = {
+      vehicleType: selectedVehicleType,
+      startDate,
+      endDate,
+    };
+    console.log('Navigating to /parking-selection with data:', bookingData);
+    navigate('/parking-selection', { state: bookingData }); // Điều hướng đến ParkingSelectionPage
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setSuccessMessage('Đặt chỗ thành công! Chúng tôi sẽ liên hệ với bạn sớm.');
-    setVehicleType('Xe máy');
-    setStartDate('2025-03-02T07:00');
-    setEndDate('2025-03-02T13:00');
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
+    console.log('handleSubmit called');
+    handleBookNow();
   };
 
   return (
@@ -37,7 +43,6 @@ function CustomerPage() {
       {/* Form đặt chỗ */}
       <div className="booking-form">
         <h2 className="form-title">Bạn muốn tìm chỗ đỗ xe?</h2>
-        {successMessage && <p className="success-message">{successMessage}</p>}
         <form className="form-content" onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Loại phương tiện</label>
@@ -119,19 +124,25 @@ function CustomerPage() {
           <p>
             Xe máy<br />10,000 VNĐ/giờ
           </p>
-          <button className="submit-btn">Đặt ngay</button>
+          <button className="submit-btn" onClick={() => handleBookNow('Xe máy')}>
+            Đặt ngay
+          </button>
         </div>
         <div className="price-option">
           <p>
             Ô tô<br />30,000 VNĐ/giờ
           </p>
-          <button className="submit-btn">Đặt ngay</button>
+          <button className="submit-btn" onClick={() => handleBookNow('Ô tô')}>
+            Đặt ngay
+          </button>
         </div>
         <div className="price-option">
           <p>
             Xe tải<br />50,000 VNĐ/giờ
           </p>
-          <button className="submit-btn">Đặt ngay</button>
+          <button className="submit-btn" onClick={() => handleBookNow('Xe tải')}>
+            Đặt ngay
+          </button>
         </div>
       </div>
 

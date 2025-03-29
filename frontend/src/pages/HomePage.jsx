@@ -1,23 +1,36 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import parkingLotImage from '../assets/image.png';
-import './HomePage.css'; // Import HomePage.css
+import './HomePage.css';
 import Chatbox from '../components/Chatbox';
 
-function HomePage() {
+function HomePage({ isLoggedIn }) {
   const [vehicleType, setVehicleType] = useState('Xe máy');
-  const [startDate, setStartDate] = useState('2025-03-02T07:00');
-  const [endDate, setEndDate] = useState('2025-03-02T13:00');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [startDate, setStartDate] = useState('2025-02-03T07:00');
+  const [endDate, setEndDate] = useState('2025-02-03T13:00');
+  const [errorMessage, setErrorMessage] = useState('');
+  const navigate = useNavigate();
+
+  const handleBookNow = (selectedVehicleType = vehicleType) => {
+    if (!isLoggedIn) {
+      setErrorMessage('Vui lòng đăng nhập để đặt chỗ!');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+
+    const bookingData = {
+      vehicleType: selectedVehicleType,
+      startDate,
+      endDate,
+    };
+    console.log('Navigating to /parking-selection with data:', bookingData);
+    navigate('/parking-selection', { state: bookingData });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setSuccessMessage('Đặt chỗ thành công! Chúng tôi sẽ liên hệ với bạn sớm.');
-    setVehicleType('Xe máy');
-    setStartDate('2025-03-02T07:00');
-    setEndDate('2025-03-02T13:00');
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
+    console.log('handleSubmit called');
+    handleBookNow();
   };
 
   return (
@@ -27,7 +40,7 @@ function HomePage() {
         <h1 className="intro-title">Giới Thiệu</h1>
         <p className="intro-description">
           Chào mừng bạn đến với <span className="highlight">BMW AutoLot</span> - dịch vụ đỗ xe thông minh, tiện lợi và an toàn.
-          Chúng tôi cung cấp địa điểm đỗ xe nhanh chóng, giúp bạn tiết kiệm thời gian và chi phí.
+          Chúng tôi tổ chức cập nhật địa điểm đỗ xe nhanh chóng.
         </p>
       </section>
 
@@ -37,45 +50,19 @@ function HomePage() {
       {/* Form đặt chỗ */}
       <div className="booking-form">
         <h2 className="form-title">Bạn muốn tìm chỗ đỗ xe?</h2>
-        {successMessage && <p className="success-message">{successMessage}</p>}
+        {errorMessage && <p className="error-message">{errorMessage}</p>}
         <form className="form-content" onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Loại phương tiện</label>
-            <div className="radio-group">
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="vehicle"
-                  value="Xe máy"
-                  checked={vehicleType === 'Xe máy'}
-                  onChange={(e) => setVehicleType(e.target.value)}
-                  className="form-radio"
-                />
-                <span>Xe máy</span>
-              </label>
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="vehicle"
-                  value="Ô tô"
-                  checked={vehicleType === 'Ô tô'}
-                  onChange={(e) => setVehicleType(e.target.value)}
-                  className="form-radio"
-                />
-                <span>Ô tô</span>
-              </label>
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  name="vehicle"
-                  value="Xe tải"
-                  checked={vehicleType === 'Xe tải'}
-                  onChange={(e) => setVehicleType(e.target.value)}
-                  className="form-radio"
-                />
-                <span>Xe tải</span>
-              </label>
-            </div>
+            <select
+              value={vehicleType}
+              onChange={(e) => setVehicleType(e.target.value)}
+              className="form-input"
+            >
+              <option value="Xe máy">Xe máy</option>
+              <option value="Ô tô">Ô tô</option>
+              <option value="Xe tải">Xe tải</option>
+            </select>
           </div>
 
           <div className="form-group">
@@ -119,19 +106,25 @@ function HomePage() {
           <p>
             Xe máy<br />10,000 VNĐ/giờ
           </p>
-          <button className="submit-btn">Đặt ngay</button>
+          <button className="submit-btn" onClick={() => handleBookNow('Xe máy')}>
+            Đặt ngay
+          </button>
         </div>
         <div className="price-option">
           <p>
             Ô tô<br />30,000 VNĐ/giờ
           </p>
-          <button className="submit-btn">Đặt ngay</button>
+          <button className="submit-btn" onClick={() => handleBookNow('Ô tô')}>
+            Đặt ngay
+          </button>
         </div>
         <div className="price-option">
           <p>
             Xe tải<br />50,000 VNĐ/giờ
           </p>
-          <button className="submit-btn">Đặt ngay</button>
+          <button className="submit-btn" onClick={() => handleBookNow('Xe tải')}>
+            Đặt ngay
+          </button>
         </div>
       </div>
 
