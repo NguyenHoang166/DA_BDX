@@ -71,7 +71,7 @@
 .details-btn {
   background-color: #6c757d;
   color: white;
-  transform: translateY(22%);
+  transform: translateY(5%);
 }
 
 .details-btn:hover {
@@ -81,6 +81,7 @@
 .booking-btn {
   background-color: #007bff;
   color: white;
+  transform: translateY(4%);
 }
 
 .booking-btn:hover {

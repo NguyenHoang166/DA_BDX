@@ -7,7 +7,7 @@ import parkingCImage from "../assets/imagebai3.jpg"; // Ảnh bãi C
 
 // Dữ liệu ảo: Hồ sơ khách hàng (giả lập)
 const userProfile = {
-  fullName: "Nguyễn Văn A",
+  fullName: "Nguyễn Hoàng",
   email: "nguyenvana@example.com",
 };
 
