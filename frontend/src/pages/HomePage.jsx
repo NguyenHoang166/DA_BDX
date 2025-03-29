@@ -47,24 +47,49 @@ function HomePage({ isLoggedIn }) {
       {/* Hình ảnh bãi đỗ xe (hình nền) */}
       <img src={parkingLotImage} alt="Bãi đỗ xe" className="parking-image" />
 
-      {/* Form đặt chỗ */}
-      <div className="booking-form">
+  {/* Form đặt chỗ */}
+  <div className="booking-form">
         <h2 className="form-title">Bạn muốn tìm chỗ đỗ xe?</h2>
         {errorMessage && <p className="error-message">{errorMessage}</p>}
         <form className="form-content" onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Loại phương tiện</label>
-            <select
-              value={vehicleType}
-              onChange={(e) => setVehicleType(e.target.value)}
-              className="form-input"
-            >
-              <option value="Xe máy">Xe máy</option>
-              <option value="Ô tô">Ô tô</option>
-              <option value="Xe tải">Xe tải</option>
-            </select>
+            <div className="radio-group">
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="vehicle"
+                  value="Xe máy"
+                  checked={vehicleType === 'Xe máy'}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="form-radio"
+                />
+                <span>Xe máy</span>
+              </label>
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="vehicle"
+                  value="Ô tô"
+                  checked={vehicleType === 'Ô tô'}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="form-radio"
+                />
+                <span>Ô tô</span>
+              </label>
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="vehicle"
+                  value="Xe tải"
+                  checked={vehicleType === 'Xe tải'}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="form-radio"
+                />
+                <span>Xe tải</span>
+              </label>
+            </div>
           </div>
-
           <div className="form-group">
             <label className="form-label">Ngày đặt chỗ</label>
             <input
