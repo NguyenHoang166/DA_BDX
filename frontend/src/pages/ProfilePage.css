@@ -1,0 +1,147 @@
+/* ProfilePage.css */
+
+.profile-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Căn sang bên trái */
+  justify-content: center;
+  min-height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 20px;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.9); /* Nền trắng mờ cho toàn bộ khung */
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.profile-title {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #333;
+  /* Xóa nền mờ riêng cho tiêu đề vì đã có nền chung */
+}
+
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.avatar-placeholder {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: #ccc;
+  margin-bottom: 10px;
+}
+
+.avatar-btn {
+  background-color: #007bff5d;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.avatar-btn:hover {
+  background-color: #0056b3;
+}
+
+.profile-details {
+  width: 100%;
+  /* Xóa nền và border-radius vì đã có nền chung từ .profile-form */
+}
+
+.profile-field {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #333;
+}
+
+.profile-field label {
+  font-weight: bold;
+}
+
+.profile-field span {
+  color: #555;
+}
+
+.profile-field input,
+.profile-field select {
+  width: 60%;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.action-btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.edit-btn {
+  background-color: #28a745; /* Màu xanh lá */
+  color: white;
+}
+
+.edit-btn:hover {
+  background-color: #218838;
+}
+
+.edit-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.back-btn {
+  background-color: #6c757d; /* Màu xám */
+  color: white;
+}
+
+.back-btn:hover {
+  background-color: #5a6268;
+}
+
+.save-btn {
+  background-color: #adb5bd; /* Màu xám nhạt */
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #3ef806;
+}
+
+.save-btn:disabled {
+  background-color: #1cf300;
+  cursor: not-allowed;
+}

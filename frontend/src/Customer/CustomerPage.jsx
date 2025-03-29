@@ -1,58 +1,142 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import parkingLotImage from '../assets/image.png';
 import './CustomerPage.css';
+import Chatbox from '../components/Chatbox';
 
-function CustomerPage({ user, onLogout }) {
-  // Dữ liệu lịch sử đặt chỗ (giả lập)
-  const bookingHistory = [
-    { id: 1, description: 'Đặt chỗ xe máy - 03/02/2025 07:00 AM', price: '10,000 VNĐ/giờ' },
-    { id: 2, description: 'Đặt chỗ ô tô - 04/02/2025 09:00 AM', price: '30,000 VNĐ/giờ' },
-  ];
+function CustomerPage() {
+  const [vehicleType, setVehicleType] = React.useState('Xe máy');
+  const [startDate, setStartDate] = React.useState('2025-03-02T07:00');
+  const [endDate, setEndDate] = React.useState('2025-03-02T13:00');
+  const [successMessage, setSuccessMessage] = React.useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSuccessMessage('Đặt chỗ thành công! Chúng tôi sẽ liên hệ với bạn sớm.');
+    setVehicleType('Xe máy');
+    setStartDate('2025-03-02T07:00');
+    setEndDate('2025-03-02T13:00');
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
+  };
 
   return (
-    <div className="customer-container">
-      <h2 className="customer-title">Thông Tin Khách Hàng</h2>
-      <div className="customer-info">
-        <div className="info-item">
-          <label>Họ tên:</label>
-          <span>{user?.name || 'Chưa có dữ liệu'}</span>
-        </div>
-        <div className="info-item">
-          <label>Email:</label>
-          <span>{user?.email || 'Chưa có dữ liệu'}</span>
-        </div>
-        <div className="info-item">
-          <label>Số điện thoại:</label>
-          <span>{user?.phone || 'Chưa có dữ liệu'}</span>
-        </div>
-        <div className="info-item">
-          <label>Địa chỉ:</label>
-          <span>{user?.address || 'Chưa có dữ liệu'}</span>
-        </div>
-      </div>
+    <div className="main-container">
+      {/* Phần giới thiệu */}
+      <section className="intro-text">
+        <h1 className="intro-title">Giới Thiệu</h1>
+        <p className="intro-description">
+          Chào mừng bạn đến với <span className="highlight">BMW AutoLot</span> - dịch vụ đỗ xe thông minh, tiện lợi và an toàn.
+          Chúng tôi cung cấp địa điểm đỗ xe nhanh chóng, giúp bạn tiết kiệm thời gian và chi phí.
+        </p>
+      </section>
 
-      <div className="customer-actions">
-        <Link to="/edit-profile" className="action-btn edit-btn">
-          Chỉnh sửa thông tin
-        </Link>
-        <button onClick={onLogout} className="action-btn logout-btn">
-          Đăng xuất
-        </button>
-      </div>
+      {/* Hình ảnh bãi đỗ xe (hình nền) */}
+      <img src={parkingLotImage} alt="Bãi đỗ xe" className="parking-image" />
 
-      <h3 className="history-title">Lịch Sử Đặt Chỗ</h3>
-      <div className="booking-history">
-        {bookingHistory.length > 0 ? (
-          bookingHistory.map((item) => (
-            <div key={item.id} className="history-item">
-              <span>{item.description}</span>
-              <span>{item.price}</span>
+      {/* Form đặt chỗ */}
+      <div className="booking-form">
+        <h2 className="form-title">Bạn muốn tìm chỗ đỗ xe?</h2>
+        {successMessage && <p className="success-message">{successMessage}</p>}
+        <form className="form-content" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Loại phương tiện</label>
+            <div className="radio-group">
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="vehicle"
+                  value="Xe máy"
+                  checked={vehicleType === 'Xe máy'}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="form-radio"
+                />
+                <span>Xe máy</span>
+              </label>
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="vehicle"
+                  value="Ô tô"
+                  checked={vehicleType === 'Ô tô'}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="form-radio"
+                />
+                <span>Ô tô</span>
+              </label>
+              <label className="radio-label">
+                <input
+                  type="radio"
+                  name="vehicle"
+                  value="Xe tải"
+                  checked={vehicleType === 'Xe tải'}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="form-radio"
+                />
+                <span>Xe tải</span>
+              </label>
             </div>
-          ))
-        ) : (
-          <p>Chưa có lịch sử đặt chỗ.</p>
-        )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Ngày đặt chỗ</label>
+            <input
+              type="datetime-local"
+              className="form-input"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Ngày trả chỗ</label>
+            <input
+              type="datetime-local"
+              className="form-input"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Đặc điểm nổi bật</label>
+            <ul className="features-list">
+              <li>Dành cho xe có yêu cầu đặc biệt</li>
+              <li>Tùy chọn chỗ đỗ gần lối vào</li>
+              <li className="highlight">Tùy chọn ưu thích NEW</li>
+            </ul>
+          </div>
+
+          <button type="submit" className="submit-btn">
+            Đặt ngay
+          </button>
+        </form>
       </div>
+
+      {/* Thanh giá cả */}
+      <div className="price-options">
+        <div className="price-option">
+          <p>
+            Xe máy<br />10,000 VNĐ/giờ
+          </p>
+          <button className="submit-btn">Đặt ngay</button>
+        </div>
+        <div className="price-option">
+          <p>
+            Ô tô<br />30,000 VNĐ/giờ
+          </p>
+          <button className="submit-btn">Đặt ngay</button>
+        </div>
+        <div className="price-option">
+          <p>
+            Xe tải<br />50,000 VNĐ/giờ
+          </p>
+          <button className="submit-btn">Đặt ngay</button>
+        </div>
+      </div>
+
+      {/* Thêm Chatbox */}
+      <Chatbox />
     </div>
   );
 }
