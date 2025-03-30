@@ -133,7 +133,10 @@
   background-color: #007bff;
   color: white;
 }
-
+.invoice-btn {
+  background-color: green;
+  color: white;
+}
 .profile-btn:hover {
   background-color: #0056b3;
 }

@@ -1,0 +1,9 @@
+/* pages/InvoicePage.css */
+.invoice-page {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  h1 {
+    color: green;
+  }

@@ -19,8 +19,10 @@ const parkingLots = [
     capacity: "50 chỗ",
     price: "10,000 VNĐ/giờ",
     image: parkingAImage,
-    positions: ["A1", "A2", "A3", "B1", "B2"], // Danh sách vị trí đỗ
-    unitPrice: 10000, // Đơn giá
+    motorcyclePositions: ["A1", "A2", "A3" , "A4","A5" ,"A6" ,"A7"], // Vị trí cho xe máy
+    carPositions: ["B1", "B2", "B3", "B4","B5","B6","B7","B8","B9",],// Vị trí cho ô tô
+    truckPositions: ["C1", "C2","C3","C4","C5","C6","C7","C8","C9",], // Vị trí cho xe tải
+    unitPrice: 330000, // Đơn giá
   },
   {
     id: 2,
@@ -28,8 +30,10 @@ const parkingLots = [
     capacity: "30 chỗ",
     price: "15,000 VNĐ/giờ",
     image: parkingBImage,
-    positions: ["C1", "C2", "D1", "D2"], // Danh sách vị trí đỗ
-    unitPrice: 15000,
+    motorcyclePositions: ["A1", "A2", "A3" , "A4","A5" ,"A6" ,"A7"], // Vị trí cho xe máy
+    carPositions: ["B1", "B2", "B3", "B4","B5","B6","B7","B8","B9",],// Vị trí cho ô tô
+    truckPositions: ["C1", "C2","C3","C4","C5","C6","C7","C8","C9",], // Vị trí cho xe tải
+    unitPrice: 35000,
   },
   {
     id: 3,
@@ -37,7 +41,9 @@ const parkingLots = [
     capacity: "40 chỗ",
     price: "20,000 VNĐ/giờ",
     image: parkingCImage,
-    positions: ["E1", "E2", "F1", "F2", "F3"], // Danh sách vị trí đỗ
+    motorcyclePositions: ["A1", "A2", "A3" , "A4","A5" ,"A6" ,"A7"], // Vị trí cho xe máy
+    carPositions: ["B1", "B2", "B3", "B4","B5","B6","B7","B8","B9",],// Vị trí cho ô tô
+    truckPositions: ["C1", "C2","C3","C4","C5","C6","C7","C8","C9",], // Vị trí cho xe tải
     unitPrice: 20000,
   },
 ];
@@ -45,8 +51,8 @@ const parkingLots = [
 // Dữ liệu ảo: Danh sách loại xe
 const vehicleTypes = [
   { value: "motorcycle", label: "Xe máy" },
-  { value: "car", label: "Ô tô"},
-  { value: "car", labe2: "xe tải"},
+  { value: "car", label: "Ô tô" },
+  { value: "truck", label: "Xe tải" }, // Sửa lỗi cú pháp và thêm xe tải
 ];
 
 export default function ParkingSelectionPage() {
@@ -54,10 +60,11 @@ export default function ParkingSelectionPage() {
   const [showBookingModal, setShowBookingModal] = useState(false); // State cho modal đặt xe
   const [selectedLotForBooking, setSelectedLotForBooking] = useState(null); // State cho bãi xe được chọn để đặt
   const [selectedVehicleType, setSelectedVehicleType] = useState(""); // State cho loại xe
-  const [selectedPositions, setSelectedPositions] = useState([]); // State cho danh sách vị trí đỗ (mảng)
+  const [selectedPositions, setSelectedPositions] = useState([]);
   const [startDate, setStartDate] = useState("2025-03-19T07:00"); // State cho ngày bắt đầu
   const [endDate, setEndDate] = useState("2025-03-19T14:00"); // State cho ngày kết thúc
   const [phoneNumber, setPhoneNumber] = useState(""); // State cho số điện thoại
+  const [paymentMethod, setPaymentMethod] = useState(""); // State cho phương thức thanh toán
 
   // Tính thời gian thuê (theo giờ) dựa trên ngày bắt đầu và ngày kết thúc
   const calculateDuration = () => {
@@ -66,6 +73,19 @@ export default function ParkingSelectionPage() {
     const diffInMs = end - start; // Chênh lệch thời gian (miliseconds)
     const diffInHours = Math.ceil(diffInMs / (1000 * 60 * 60)); // Chuyển sang giờ, làm tròn lên
     return diffInHours > 0 ? diffInHours : 0; // Đảm bảo không âm
+  };
+
+  // Lấy danh sách vị trí đỗ dựa trên loại xe
+  const getAvailablePositions = () => {
+    if (!selectedLotForBooking || !selectedVehicleType) return [];
+    if (selectedVehicleType === "motorcycle") {
+      return selectedLotForBooking.motorcyclePositions || [];
+    } else if (selectedVehicleType === "car") {
+      return selectedLotForBooking.carPositions || [];
+    } else if (selectedVehicleType === "truck") {
+      return selectedLotForBooking.truckPositions || [];
+    }
+    return [];
   };
 
   // Mở popup chi tiết
@@ -82,9 +102,11 @@ export default function ParkingSelectionPage() {
   const openBookingModal = (lot) => {
     setSelectedLotForBooking(lot);
     setSelectedPositions([]); // Reset danh sách vị trí khi mở modal
+    setSelectedVehicleType(""); // Reset loại xe
     setStartDate("2025-03-19T07:00"); // Reset ngày bắt đầu
     setEndDate("2025-03-19T14:00"); // Reset ngày kết thúc
     setPhoneNumber(""); // Reset số điện thoại
+    setPaymentMethod(""); // Reset phương thức thanh toán
     setShowBookingModal(true);
   };
 
@@ -97,6 +119,7 @@ export default function ParkingSelectionPage() {
     setStartDate("2025-03-19T07:00");
     setEndDate("2025-03-19T14:00");
     setPhoneNumber("");
+    setPaymentMethod("");
   };
 
   // Xử lý chọn vị trí đỗ
@@ -128,6 +151,10 @@ export default function ParkingSelectionPage() {
       alert("Vui lòng nhập số điện thoại!");
       return;
     }
+    if (!paymentMethod) {
+      alert("Vui lòng chọn phương thức thanh toán!");
+      return;
+    }
     alert(
       `Đặt xe thành công tại ${selectedLotForBooking.name}, vị trí: ${selectedPositions.join(", ")}, loại xe: ${
         vehicleTypes.find((type) => type.value === selectedVehicleType).label
@@ -140,6 +167,7 @@ export default function ParkingSelectionPage() {
     setStartDate("2025-03-19T07:00");
     setEndDate("2025-03-19T14:00");
     setPhoneNumber("");
+    setPaymentMethod("");
   };
 
   return (
@@ -199,12 +227,15 @@ export default function ParkingSelectionPage() {
               />
             </div>
 
-            <h2>THÔNG TIN THUẾ</h2>
+            <h2>THÔNG TIN THUÊ</h2>
             <div className="modal-section">
               <label>Loại xe (*)</label>
               <select
                 value={selectedVehicleType}
-                onChange={(e) => setSelectedVehicleType(e.target.value)}
+                onChange={(e) => {
+                  setSelectedVehicleType(e.target.value);
+                  setSelectedPositions([]); // Reset vị trí khi thay đổi loại xe
+                }}
               >
                 <option value="">Chọn loại xe</option>
                 {vehicleTypes.map((type) => (
@@ -215,22 +246,24 @@ export default function ParkingSelectionPage() {
               </select>
             </div>
 
-            <div className="modal-section">
-              <label>Chọn vị trí đỗ (*)</label>
-              <div className="position-list">
-                {selectedLotForBooking.positions.map((position) => (
-                  <label key={position} className="position-item">
-                    <input
-                      type="checkbox"
-                      value={position}
-                      checked={selectedPositions.includes(position)}
-                      onChange={() => handlePositionChange(position)}
-                    />
-                    {position}
-                  </label>
-                ))}
+            {selectedVehicleType && (
+              <div className="modal-section">
+                <label>Chọn vị trí đỗ (*)</label>
+                <div className="position-list">
+                  {getAvailablePositions().map((position) => (
+                    <label key={position} className="position-item">
+                      <input
+                        type="checkbox"
+                        value={position}
+                        checked={selectedPositions.includes(position)}
+                        onChange={() => handlePositionChange(position)}
+                      />
+                      {position}
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="modal-section">
               <div className="parking-position">
@@ -282,15 +315,33 @@ export default function ParkingSelectionPage() {
             <h2>CHỌN PHƯƠNG THỨC THANH TOÁN</h2>
             <div className="modal-section payment-methods">
               <label>
-                <input type="radio" name="payment" value="momo" />
+                <input
+                  type="radio"
+                  name="payment"
+                  value="momo"
+                  checked={paymentMethod === "momo"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
                 Momo
               </label>
               <label>
-                <input type="radio" name="payment" value="zalopay" />
+                <input
+                  type="radio"
+                  name="payment"
+                  value="zalopay"
+                  checked={paymentMethod === "zalopay"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
                 ZaloPay
               </label>
               <label>
-                <input type="radio" name="payment" value="cash" />
+                <input
+                  type="radio"
+                  name="payment"
+                  value="cash"
+                  checked={paymentMethod === "cash"}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                />
                 Tiền mặt
               </label>
             </div>

@@ -10,6 +10,7 @@ import CustomerPage from './Customer/CustomerPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import ParkingSelectionPage from './pages/ParkingSelectionPage';
+import InvoicePage from './pages/InvoicePage'; // Import trang Hóa đơn
 import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
 
 // Component bảo vệ route
@@ -94,6 +95,9 @@ function App() {
                   <Link to="/profile" className="dropdown-btn profile-btn" onClick={() => setIsDropdownOpen(false)}>
                     Thông Tin Cá Nhân
                   </Link>
+                  <Link to="/invoice" className="dropdown-btn invoice-btn" onClick={() => setIsDropdownOpen(false)}>
+                    Hóa Đơn
+                  </Link>
                   <button className="dropdown-btn logout-btn" onClick={handleLogout}>
                     Đăng Xuất
                   </button>
@@ -135,6 +139,14 @@ function App() {
             element={
               <PrivateRoute isLoggedIn={isLoggedIn}>
                 <ParkingSelectionPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/invoice"
+            element={
+              <PrivateRoute isLoggedIn={isLoggedIn}>
+                <InvoicePage />
               </PrivateRoute>
             }
           />
