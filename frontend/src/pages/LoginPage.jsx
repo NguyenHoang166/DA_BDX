@@ -10,11 +10,21 @@ function LoginPage({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Email:', email, 'Password:', password); // Debug: Kiểm tra giá trị email và password
+    console.log('Email:', email, 'Password:', password); 
     const success = onLogin(email, password);
-    console.log('Login success:', success); // Debug: Kiểm tra giá trị trả về của onLogin
+    console.log('Login success:', success); 
     if (success) {
-      navigate('/customer', { replace: true }); // Chuyển hướng đến trang khách hàng
+      
+      const role = email === 'admin@example.com' ? 'Admin' : 'Người dùng';
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('role', role);
+      console.log('Role after login:', role); 
+
+      if (role === 'Admin') {
+        navigate('/admin', { replace: true }); 
+      } else {
+        navigate('/customer', { replace: true }); 
+      }
     } else {
       setError('Email hoặc mật khẩu không đúng!');
     }

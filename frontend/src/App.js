@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Route, Routes, Link, Navigate, useLocation } from 'react-router-dom';
 import './App.css';
 import logo from './assets/logo.png';
 import defaultAvatar from './assets/image 1.png';
@@ -10,13 +11,78 @@ import CustomerPage from './Customer/CustomerPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import ParkingSelectionPage from './pages/ParkingSelectionPage';
-import InvoicePage from './pages/InvoicePage'; // Import trang Hóa đơn
-import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
+import InvoicePage from './pages/InvoicePage';
+import AdminPage from './pages/AdminPage';
 
 // Component bảo vệ route
-function PrivateRoute({ children, isLoggedIn }) {
-  console.log('isLoggedIn in PrivateRoute:', isLoggedIn);
-  return isLoggedIn ? children : <Navigate to="/login" />;
+function PrivateRoute({ children, isLoggedIn, role, allowedRole }) {
+  console.log('isLoggedIn in PrivateRoute:', isLoggedIn, 'role:', role, 'allowedRole:', allowedRole);
+  if (!isLoggedIn) {
+    return <Navigate to="/login" />;
+  }
+  if (allowedRole && role !== allowedRole) {
+    return <Navigate to="/" />;
+  }
+  return children;
+}
+
+// Component để hiển thị header
+function Header({ isLoggedIn, user, toggleDropdown, isDropdownOpen, dropdownRef, handleLogout }) {
+  const location = useLocation();
+
+  // Không hiển thị header trên trang admin
+  if (location.pathname === '/admin') {
+    return null;
+  }
+
+  return (
+    <header className="header">
+      <div className="header-left">
+        <Link to="/">
+          <img src={logo} alt="Logo" className="logo" />
+        </Link>
+        <span className="logo-text">BMW AutoLot</span>
+      </div>
+      <nav className="nav">
+        <button className="nav-link">Giới Thiệu</button>
+        <button className="nav-link">Hỗ Trợ</button>
+        <button className="nav-link">Khuyến Mãi</button>
+      </nav>
+      {isLoggedIn ? (
+        <div className="dropdown" ref={dropdownRef}>
+          <button className="login-btn" onClick={toggleDropdown}>
+            <img src={user?.avatar || defaultAvatar} alt="Avatar" className="user-avatar" />
+            {user?.name || 'Khách Hàng'} ▼
+          </button>
+          {isDropdownOpen && (
+            <div className="dropdown-menu">
+              {user?.role === 'Admin' ? (
+                <Link to="/admin" className="dropdown-btn admin-btn" onClick={() => toggleDropdown()}>
+                  Trang Admin
+                </Link>
+              ) : (
+                <>
+                  <Link to="/profile" className="dropdown-btn profile-btn" onClick={() => toggleDropdown()}>
+                    Thông Tin Cá Nhân
+                  </Link>
+                  <Link to="/invoice" className="dropdown-btn invoice-btn" onClick={() => toggleDropdown()}>
+                    Hóa Đơn
+                  </Link>
+                </>
+              )}
+              <button className="dropdown-btn logout-btn" onClick={handleLogout}>
+                Đăng Xuất
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <Link to="/login" className="login-btn">
+          Đăng Nhập
+        </Link>
+      )}
+    </header>
+  );
 }
 
 function App() {
@@ -25,9 +91,43 @@ function App() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  useEffect(() => {
+    const storedIsLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const storedRole = localStorage.getItem('role');
+    if (storedIsLoggedIn && storedRole) {
+      setIsLoggedIn(true);
+      setUser({
+        email: storedRole === 'Admin' ? 'admin@example.com' : 'test@example.com',
+        name: storedRole === 'Admin' ? 'Admin User' : 'Nguyễn Hoàng',
+        phone: '0123 456 789',
+        address: '123 Đường Láng, Đống Đa, Hà Nội',
+        role: storedRole,
+        gender: 'Nam',
+        dob: storedRole === 'Admin' ? '01/01/1990' : '01/01/2000',
+        cccd: storedRole === 'Admin' ? '987654321012' : '123456789012',
+        avatar: defaultAvatar,
+      });
+    }
+  }, []);
+
   const handleLogin = (email, password) => {
-    if (email === 'test@example.com' && password === '123456') {
-      console.log('Login successful, setting isLoggedIn to true');
+    if (email === 'admin@example.com' && password === '123456') {
+      console.log('Admin login successful, setting isLoggedIn to true');
+      setIsLoggedIn(true);
+      setUser({
+        email: email,
+        name: 'Admin User',
+        phone: '0123 456 789',
+        address: '123 Đường Láng, Đống Đa, Hà Nội',
+        role: 'Admin',
+        gender: 'Nam',
+        dob: '01/01/1990',
+        cccd: '987654321012',
+        avatar: defaultAvatar,
+      });
+      return true;
+    } else if (email === 'test@example.com' && password === '123456') {
+      console.log('User login successful, setting isLoggedIn to true');
       setIsLoggedIn(true);
       setUser({
         email: email,
@@ -50,6 +150,8 @@ function App() {
     setIsLoggedIn(false);
     setUser(null);
     setIsDropdownOpen(false);
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('role');
   };
 
   const toggleDropdown = () => {
@@ -71,45 +173,15 @@ function App() {
   return (
     <Router>
       <div className="app">
-        {/* Header */}
-        <header className="header">
-          <div className="header-left">
-            <Link to="/">
-              <img src={logo} alt="Logo" className="logo" />
-            </Link>
-            <span className="logo-text">BMW AutoLot</span>
-          </div>
-          <nav className="nav">
-            <button className="nav-link">Giới Thiệu</button>
-            <button className="nav-link">Hỗ Trợ</button>
-            <button className="nav-link">Khuyến Mãi</button>
-          </nav>
-          {isLoggedIn ? (
-            <div className="dropdown" ref={dropdownRef}>
-              <button className="login-btn" onClick={toggleDropdown}>
-                <img src={user?.avatar || defaultAvatar} alt="Avatar" className="user-avatar" />
-                {user?.name || 'Khách Hàng'} ▼
-              </button>
-              {isDropdownOpen && (
-                <div className="dropdown-menu">
-                  <Link to="/profile" className="dropdown-btn profile-btn" onClick={() => setIsDropdownOpen(false)}>
-                    Thông Tin Cá Nhân
-                  </Link>
-                  <Link to="/invoice" className="dropdown-btn invoice-btn" onClick={() => setIsDropdownOpen(false)}>
-                    Hóa Đơn
-                  </Link>
-                  <button className="dropdown-btn logout-btn" onClick={handleLogout}>
-                    Đăng Xuất
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Link to="/login" className="login-btn">
-              Đăng Nhập
-            </Link>
-          )}
-        </header>
+        {/* Header chỉ hiển thị trên các trang không phải admin */}
+        <Header
+          isLoggedIn={isLoggedIn}
+          user={user}
+          toggleDropdown={toggleDropdown}
+          isDropdownOpen={isDropdownOpen}
+          dropdownRef={dropdownRef}
+          handleLogout={handleLogout}
+        />
 
         {/* Routes */}
         <Routes>
@@ -121,7 +193,7 @@ function App() {
           <Route
             path="/customer"
             element={
-              <PrivateRoute isLoggedIn={isLoggedIn}>
+              <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
                 <CustomerPage />
               </PrivateRoute>
             }
@@ -129,7 +201,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <PrivateRoute isLoggedIn={isLoggedIn}>
+              <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
                 <ProfilePage user={user} setUser={setUser} />
               </PrivateRoute>
             }
@@ -137,7 +209,7 @@ function App() {
           <Route
             path="/parking-selection"
             element={
-              <PrivateRoute isLoggedIn={isLoggedIn}>
+              <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
                 <ParkingSelectionPage />
               </PrivateRoute>
             }
@@ -145,8 +217,16 @@ function App() {
           <Route
             path="/invoice"
             element={
-              <PrivateRoute isLoggedIn={isLoggedIn}>
+              <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
                 <InvoicePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Admin">
+                <AdminPage />
               </PrivateRoute>
             }
           />
