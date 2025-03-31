@@ -91,7 +91,8 @@ function App() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
+  // Hàm để đồng bộ trạng thái với localStorage
+  const syncAuthState = () => {
     const storedIsLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     const storedRole = localStorage.getItem('role');
     if (storedIsLoggedIn && storedRole) {
@@ -107,12 +108,34 @@ function App() {
         cccd: storedRole === 'Admin' ? '987654321012' : '123456789012',
         avatar: defaultAvatar,
       });
+    } else {
+      setIsLoggedIn(false);
+      setUser(null);
     }
+  };
+
+  // Đồng bộ trạng thái khi ứng dụng khởi động
+  useEffect(() => {
+    syncAuthState();
+  }, []);
+
+  // Theo dõi sự thay đổi của localStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      syncAuthState();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const handleLogin = (email, password) => {
     if (email === 'admin@example.com' && password === '123456') {
       console.log('Admin login successful, setting isLoggedIn to true');
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('role', 'Admin');
       setIsLoggedIn(true);
       setUser({
         email: email,
@@ -128,6 +151,8 @@ function App() {
       return true;
     } else if (email === 'test@example.com' && password === '123456') {
       console.log('User login successful, setting isLoggedIn to true');
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('role', 'Người dùng');
       setIsLoggedIn(true);
       setUser({
         email: email,
@@ -147,11 +172,13 @@ function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('role');
     setIsLoggedIn(false);
     setUser(null);
     setIsDropdownOpen(false);
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('role');
+    // Gửi sự kiện để đồng bộ trạng thái trên các tab khác
+    window.dispatchEvent(new Event('storage'));
   };
 
   const toggleDropdown = () => {
@@ -226,7 +253,7 @@ function App() {
             path="/admin"
             element={
               <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Admin">
-                <AdminPage />
+                <AdminPage onLogout={handleLogout} />
               </PrivateRoute>
             }
           />
