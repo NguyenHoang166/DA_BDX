@@ -12,20 +12,37 @@ const AdminPage = ({ onLogout }) => {
   const [showAccountList, setShowAccountList] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showParkingApprovalForm, setShowParkingApprovalForm] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchCriteria, setSearchCriteria] = useState('name');
   const [statusFilter, setStatusFilter] = useState('all');
   const [accountList, setAccountList] = useState([
-    { id: 1, type: 'Khách hàng', name: 'Nguyễn Văn Hoàng', username: 'vanhoang123', email: 'vanhoang@gmail.com', date: '19/03/2025', active: true },
-    { id: 2, type: 'Chủ bãi', name: 'Nguyễn Trí Ngọcc', username: 'tringocb9', email: 'tringocb9@gmail.com', date: '20/03/2025', active: true },
-    { id: 3, type: 'Khách hàng', name: 'Nguyễn Minh Khoa', username: 'khoavipro', email: 'minhkhoa@gmail.com', date: '20/03/2025', active: true },
-    { id: 4, type: 'Chủ bãi', name: 'Nguyễn Phí Long', username: 'filonge', email: 'filong@gmail.com', date: '22/03/2025', active: true },
-    { id: 5, type: 'Khách hàng', name: 'Nguyễn Đức Hiếu', username: 'duchieu257', email: 'duchieu@gmail.com', date: '22/03/2025', active: true },
-    { id: 6, type: 'Khách hàng', name: 'Nguyễn Văn Sơn', username: 'vansonzc', email: 'vanson@gmail.com', date: '23/03/2025', active: true },
-    { id: 7, type: 'Khách hàng', name: 'Nguyễn Văn Nhật', username: 'nhat123abc', email: 'nhat123@gmail.com', date: '23/03/2025', active: true },
-    { id: 8, type: 'Chủ bãi', name: 'Nguyễn Nhật Sinh', username: 'sinh12ba', email: 'sinh12@gmail.com', date: '25/03/2025', active: true },
+    { id: 1, type: 'Khách hàng', name: 'Nguyễn Văn Hoàng', password: 'vanhoang123', email: 'vanhoang@gmail.com', date: '19/03/2025', active: true, image: 'https://via.placeholder.com/50' },
+    { id: 2, type: 'Chủ bãi', name: 'Nguyễn Trí Ngọcc', password: 'tringocb9', email: 'tringocb9@gmail.com', date: '20/03/2025', active: true, image: 'https://via.placeholder.com/50' },
+    { id: 3, type: 'Khách hàng', name: 'Nguyễn Minh Khoa', password: 'khoavipro', email: 'minhkhoa@gmail.com', date: '20/03/2025', active: true, image: 'https://via.placeholder.com/50' },
+    { id: 4, type: 'Chủ bãi', name: 'Nguyễn Phí Long', password: 'filonge', email: 'filong@gmail.com', date: '22/03/2025', active: true, image: 'https://via.placeholder.com/50' },
+    { id: 5, type: 'Khách hàng', name: 'Nguyễn Đức Hiếu', password: 'duchieu257', email: 'duchieu@gmail.com', date: '22/03/2025', active: true, image: 'https://via.placeholder.com/50' },
+    { id: 6, type: 'Khách hàng', name: 'Nguyễn Văn Sơn', password: 'vansonzc', email: 'vanson@gmail.com', date: '23/03/2025', active: true, image: 'https://via.placeholder.com/50' },
+    { id: 7, type: 'Khách hàng', name: 'Nguyễn Văn Nhật', password: 'nhat123abc', email: 'nhat123@gmail.com', date: '23/03/2025', active: true, image: 'https://via.placeholder.com/50' },
+    { id: 8, type: 'Chủ bãi', name: 'Nguyễn Nhật Sinh', password: 'sinh12ba', email: 'sinh12@gmail.com', date: '25/03/2025', active: true, image: 'https://via.placeholder.com/50' },
   ]);
+
+  const parkingList = [
+    {
+      id: 1,
+      ownerName: 'Nguyễn Văn Hoàng',
+      dob: '03/05/2003',
+      phone: '0379443448',
+      email: 'vanhoang@gmail.com',
+      ownerImage: 'https://via.placeholder.com/100',
+      parkingName: 'Bãi XE ĐN',
+      location: '22 Bạch Đằng Cửu Cường',
+      capacity: '120',
+      vehicleTypes: 'Ô tô, xe tải, xe máy',
+      image: 'https://via.placeholder.com/300',
+    },
+  ];
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
@@ -71,11 +88,10 @@ const AdminPage = ({ onLogout }) => {
   };
 
   const handleLogout = () => {
-    onLogout(); // Gọi hàm handleLogout từ App.js
+    onLogout();
     navigate('/login');
   };
 
-  // Hàm khóa/mở khóa tài khoản
   const handleLock = (id) => {
     setAccountList((prevList) =>
       prevList.map((account) =>
@@ -84,27 +100,24 @@ const AdminPage = ({ onLogout }) => {
     );
   };
 
-  // Hàm mở form sửa tài khoản
   const handleEdit = (account) => {
     setSelectedAccount(account);
     setShowEditForm(true);
   };
 
-  // Hàm xóa tài khoản
   const handleDelete = (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa tài khoản này?')) {
       setAccountList((prevList) => prevList.filter((account) => account.id !== id));
     }
   };
 
-  // Hàm lọc danh sách tài khoản
   const filteredAccounts = accountList.filter((account) => {
     const keyword = searchKeyword.toLowerCase();
     const matchesKeyword =
       searchCriteria === 'name'
         ? account.name.toLowerCase().includes(keyword)
-        : searchCriteria === 'username'
-        ? account.username.toLowerCase().includes(keyword)
+        : searchCriteria === 'password'
+        ? account.password.toLowerCase().includes(keyword)
         : account.email.toLowerCase().includes(keyword);
 
     const matchesStatus =
@@ -115,22 +128,22 @@ const AdminPage = ({ onLogout }) => {
     return matchesKeyword && matchesStatus;
   });
 
-  // Component form thêm tài khoản
   const AddAccountForm = () => {
     const [formData, setFormData] = useState({
       name: '',
-      username: '',
+      password: '',
       email: '',
       type: 'Khách hàng',
       active: true,
       date: new Date().toLocaleDateString('vi-VN'),
+      image: 'https://via.placeholder.com/50',
     });
 
     const handleChange = (e) => {
-      const { name, value, type, checked } = e.target;
+      const { name, value, type, checked, files } = e.target;
       setFormData((prevData) => ({
         ...prevData,
-        [name]: type === 'checkbox' ? checked : value,
+        [name]: type === 'checkbox' ? checked : type === 'file' ? URL.createObjectURL(files[0]) : value,
       }));
     };
 
@@ -160,11 +173,11 @@ const AdminPage = ({ onLogout }) => {
               />
             </div>
             <div className="form-group">
-              <label>Tên tài khoản:</label>
+              <label>Mật khẩu:</label>
               <input
-                type="text"
-                name="username"
-                value={formData.username}
+                type="password"
+                name="password"
+                value={formData.password}
                 onChange={handleChange}
                 required
               />
@@ -187,6 +200,16 @@ const AdminPage = ({ onLogout }) => {
               </select>
             </div>
             <div className="form-group">
+              <label>Hình ảnh:</label>
+              <input
+                type="file"
+                name="image"
+                accept="image/*"
+                onChange={handleChange}
+              />
+              {formData.image && <img src={formData.image} alt="Preview" className="image-preview" />}
+            </div>
+            <div className="form-group">
               <label>Hoạt động:</label>
               <input
                 type="checkbox"
@@ -207,20 +230,21 @@ const AdminPage = ({ onLogout }) => {
     );
   };
 
-  // Component form chỉnh sửa tài khoản
   const EditAccountForm = () => {
     const [formData, setFormData] = useState({
       name: selectedAccount.name,
+      password: selectedAccount.password,
       email: selectedAccount.email,
       type: selectedAccount.type,
       active: selectedAccount.active,
+      image: selectedAccount.image,
     });
 
     const handleChange = (e) => {
-      const { name, value, type, checked } = e.target;
+      const { name, value, type, checked, files } = e.target;
       setFormData((prevData) => ({
         ...prevData,
-        [name]: type === 'checkbox' ? checked : value,
+        [name]: type === 'checkbox' ? checked : type === 'file' ? URL.createObjectURL(files[0]) : value,
       }));
     };
 
@@ -253,6 +277,16 @@ const AdminPage = ({ onLogout }) => {
               />
             </div>
             <div className="form-group">
+              <label>Mật khẩu:</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="form-group">
               <label>Email:</label>
               <input
                 type="email"
@@ -268,6 +302,16 @@ const AdminPage = ({ onLogout }) => {
                 <option value="Khách hàng">Khách hàng</option>
                 <option value="Chủ bãi">Chủ bãi</option>
               </select>
+            </div>
+            <div className="form-group">
+              <label>Hình ảnh:</label>
+              {formData.image && <img src={formData.image} alt="Current" className="image-preview" />}
+              <input
+                type="file"
+                name="image"
+                accept="image/*"
+                onChange={handleChange}
+              />
             </div>
             <div className="form-group">
               <label>Hoạt động:</label>
@@ -301,13 +345,14 @@ const AdminPage = ({ onLogout }) => {
               className="search-input"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
+              maxLength="255" // Thêm giới hạn 255 ký tự
             />
             <select
               value={searchCriteria}
               onChange={(e) => setSearchCriteria(e.target.value)}
             >
               <option value="name">Tìm kiếm theo họ và tên</option>
-              <option value="username">Tìm kiếm theo tên tài khoản</option>
+              <option value="password">Tìm kiếm theo mật khẩu</option>
               <option value="email">Tìm kiếm theo email</option>
             </select>
             <select
@@ -329,9 +374,10 @@ const AdminPage = ({ onLogout }) => {
                 <th>ID</th>
                 <th>Loại tài khoản</th>
                 <th>Họ và Tên</th>
-                <th>Tên tài khoản</th>
+                <th>Mật khẩu</th>
                 <th>Email</th>
                 <th>Ngày đăng ký</th>
+                <th>Hình ảnh</th>
                 <th>Hoạt động</th>
                 <th>Chức năng</th>
               </tr>
@@ -342,9 +388,12 @@ const AdminPage = ({ onLogout }) => {
                   <td>{account.id}</td>
                   <td>{account.type}</td>
                   <td>{account.name}</td>
-                  <td>{account.username}</td>
+                  <td>{account.password}</td>
                   <td>{account.email}</td>
                   <td>{account.date}</td>
+                  <td>
+                    <img src={account.image} alt={account.name} className="account-image" />
+                  </td>
                   <td>
                     <input type="checkbox" checked={account.active} readOnly />
                   </td>
@@ -383,14 +432,76 @@ const AdminPage = ({ onLogout }) => {
     );
   };
 
+  const ParkingApprovalForm = () => {
+    const [approvalCode, setApprovalCode] = useState('');
+
+    const handleApprove = () => {
+      if (approvalCode.trim() === '') {
+        alert('Vui lòng nhập mã để duyệt bãi đỗ!');
+        return;
+      }
+      alert(`Bãi đỗ đã được phê duyệt với mã: ${approvalCode}`);
+      setShowParkingApprovalForm(false);
+    };
+
+    const handleReject = () => {
+      if (window.confirm('Bạn có chắc chắn muốn từ chối bãi đỗ này?')) {
+        alert('Bãi đỗ đã bị từ chối.');
+        setShowParkingApprovalForm(false);
+      }
+    };
+
+    const parking = parkingList[0];
+
+    return (
+      <div className="parking-approval-overlay">
+        <div className="parking-approval-form">
+          <h3>Đơn Đăng Ký</h3>
+          <div className="parking-approval-content">
+            <div className="parking-info">
+              <h4>Hồ sơ cá nhân</h4>
+              {parking.ownerImage && (
+                <img src={parking.ownerImage} alt="Owner" className="owner-image" />
+              )}
+              <p><strong>Họ và Tên:</strong> {parking.ownerName}</p>
+              <p><strong>Ngày sinh:</strong> {parking.dob}</p>
+              <p><strong>Số điện thoại:</strong> {parking.phone}</p>
+              <p><strong>Email:</strong> {parking.email}</p>
+            </div>
+            <div className="parking-details">
+              <h4>Thông tin bãi</h4>
+              <p><strong>Tên bãi:</strong> {parking.parkingName}</p>
+              <p><strong>Trị trí:</strong> {parking.location}</p>
+              <p><strong>Số lượng xe:</strong> {parking.capacity}</p>
+              <p><strong>Loại xe:</strong> {parking.vehicleTypes}</p>
+              <img src={parking.image} alt="Parking Lot" className="parking-image" />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Nhập mã để duyệt bãi đỗ xe:</label>
+            <input
+              type="text"
+              value={approvalCode}
+              onChange={(e) => setApprovalCode(e.target.value)}
+              placeholder="Nhập mã..."
+            />
+          </div>
+          <div className="form-buttons">
+            <button className="approve-btn" onClick={handleApprove}>Phê duyệt</button>
+            <button className="reject-btn" onClick={handleReject}>Từ chối</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="admin-page">
-      {/* Sidebar */}
       <div className="sidebar">
         <ul>
           <li>Trang Chủ</li>
           <li onClick={() => setShowAccountList(true)}>Quản Lý Tài Khoản</li>
-          <li>Duyệt Bãi Đỗ</li>
+          <li onClick={() => setShowParkingApprovalForm(true)}>Duyệt Bãi Đỗ</li>
           <li>Xử Lý Vi Phạm</li>
           <li>Khuyến Mãi</li>
           <li>Thống Kê</li>
@@ -398,9 +509,7 @@ const AdminPage = ({ onLogout }) => {
         <div className="logout-btn" onClick={handleLogout}>Đăng xuất</div>
       </div>
 
-      {/* Main Content */}
       <div className="main-content">
-        {/* Header */}
         <div className="header">
           <h3>Admin</h3>
           <div className="header-icons">
@@ -409,9 +518,7 @@ const AdminPage = ({ onLogout }) => {
           </div>
         </div>
 
-        {/* Wrapper để kiểm soát khoảng cách */}
         <div className="content-wrapper">
-          {/* Cards */}
           <div className="cards">
             <div className="card">
               <h4>Tổng quan doanh thu</h4>
@@ -430,7 +537,6 @@ const AdminPage = ({ onLogout }) => {
             </div>
           </div>
 
-          {/* Charts */}
           <div className="charts">
             <div className="bar-chart">
               <h3>Tổng quan doanh thu (04/03/2023 - 30/03/2023)</h3>
@@ -444,12 +550,10 @@ const AdminPage = ({ onLogout }) => {
         </div>
       </div>
 
-      {/* Hiển thị bảng danh sách tài khoản khi được kích hoạt */}
       {showAccountList && <AccountListTable />}
-      {/* Hiển thị form chỉnh sửa tài khoản khi được kích hoạt */}
       {showEditForm && <EditAccountForm />}
-      {/* Hiển thị form thêm tài khoản khi được kích hoạt */}
       {showAddForm && <AddAccountForm />}
+      {showParkingApprovalForm && <ParkingApprovalForm />}
     </div>
   );
 };

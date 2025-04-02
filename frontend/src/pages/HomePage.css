@@ -8,6 +8,12 @@
   font-family: Arial, sans-serif;
 }
 
+/* Đảm bảo tất cả liên kết (link) có màu đen */
+a {
+  color: #000000 !important;
+  text-decoration: none;
+}
+
 /* Container chính của HomePage */
 .main-container {
   position: relative;
@@ -34,7 +40,7 @@
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
-  color: #333333ab;
+  color: #000000;
   background: rgba(255, 255, 255, 0.199);
   padding: 15px 30px;
   border-radius: 10px;
@@ -45,16 +51,17 @@
 .intro-text .intro-title {
   font-size: 24px;
   margin-bottom: 10px;
+  color: #000000;
 }
 
 .intro-text .intro-description {
   font-size: 14px;
-  color: #555;
+  color: #000000;
 }
 
 .intro-text .highlight {
   font-weight: bold;
-  color: #000000e5;
+  color: #000000;
 }
 
 /* Form đặt chỗ */
@@ -69,16 +76,17 @@
   box-shadow: 0px 4px 10px rgba(22, 0, 221, 0.363);
   width: 300px;
   z-index: 1;
+  color: #000000; /* Đảm bảo màu chữ mặc định trong form là đen */
 }
 
 .booking-form .form-title {
   font-size: 20px;
   margin-bottom: 15px;
-  color: #333;
+  color: #000000 !important; /* Đảm bảo tiêu đề form là đen */
 }
 
 .success-message {
-  color: green;
+  color: #000000 !important;
   font-size: 14px;
   margin-bottom: 10px;
   text-align: center;
@@ -92,7 +100,7 @@
   font-weight: bold;
   display: block;
   margin-bottom: 5px;
-  color: #333;
+  color: #000000 !important; /* Đảm bảo nhãn là đen */
 }
 
 .form-input {
@@ -101,6 +109,7 @@
   border: 1px solid #cccccc5b;
   border-radius: 5px;
   font-size: 14px;
+  color: #000000 !important; /* Đảm bảo chữ trong input là đen */
 }
 
 .radio-group {
@@ -114,7 +123,7 @@
   align-items: center;
   gap: 5px;
   font-size: 14px;
-  color: #333;
+  color: #000000 !important; /* Đảm bảo nhãn radio là đen */
 }
 
 .form-radio {
@@ -124,23 +133,24 @@
 .features-list {
   list-style-type: none;
   padding: 0;
-  color: #555;
+  color: #000000 !important; /* Đảm bảo danh sách tính năng là đen */
   font-size: 14px;
   margin-bottom: 15px;
 }
 
 .features-list li {
   margin-bottom: 5px;
+  color: #000000 !important; /* Đảm bảo từng mục trong danh sách là đen */
 }
 
 .features-list .highlight {
-  color: #ff00007c;
+  color: #000000 !important; /* Đảm bảo phần highlight là đen */
   font-weight: bold;
 }
 
 .submit-btn {
   background-color: #303a39be;
-  color: rgba(8, 8, 8, 0.384);
+  color: #000000 !important; /* Đảm bảo màu chữ của nút là đen */
   border: none;
   padding: 10px;
   width: 100%;
@@ -186,7 +196,7 @@
 
 .price-option p {
   font-size: 16px;
-  color: #050505;
+  color: #000000 !important;
   margin: 0;
   flex-grow: 1;
   display: flex;
@@ -198,4 +208,19 @@
   padding: 8px;
   font-size: 14px;
   width: 100%;
+  color: #000000 !important;
+}
+
+/* Đảm bảo nút "Chat với chúng tôi" có màu đen */
+.chat-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #303a39be;
+  color: #000000 !important;
+  padding: 10px 20px;
+  border-radius: 20px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  z-index: 2;
 }
