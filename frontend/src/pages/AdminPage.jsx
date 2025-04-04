@@ -8,7 +8,9 @@ const AdminPage = ({ onLogout }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [showAccountForm, setShowAccountForm] = useState(false);
-  const [showAddAccountForm, setShowAddAccountForm] = useState(false); // New state for add account form
+  const [showAddAccountForm, setShowAddAccountForm] = useState(false);
+  const [showEditAccountForm, setShowEditAccountForm] = useState(false); // New state for edit form
+  const [editUser, setEditUser] = useState(null); // Store the user being edited
   const [users, setUsers] = useState([
     {
       id: 1,
@@ -123,6 +125,7 @@ const AdminPage = ({ onLogout }) => {
   ]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newUser, setNewUser] = useState({
+    image: 'https://via.placeholder.com/50',
     name: '',
     email: '',
     phone: '',
@@ -169,8 +172,8 @@ const AdminPage = ({ onLogout }) => {
 
   const handleCloseAddAccountForm = () => {
     setShowAddAccountForm(false);
-    // Reset the form when closing
     setNewUser({
+      image: 'https://via.placeholder.com/50',
       name: '',
       email: '',
       phone: '',
@@ -181,11 +184,19 @@ const AdminPage = ({ onLogout }) => {
     });
   };
 
+  const handleImageChange = (e, setUserFunction, user) => {
+    const file = e.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setUserFunction({ ...user, image: imageUrl });
+    }
+  };
+
   const handleAddAccount = (e) => {
     e.preventDefault();
     const newUserData = {
       id: users.length + 1,
-      image: 'https://via.placeholder.com/50', // Placeholder image
+      image: newUser.image,
       name: newUser.name,
       email: newUser.email,
       phone: newUser.phone,
@@ -195,17 +206,35 @@ const AdminPage = ({ onLogout }) => {
       role: newUser.role,
     };
     setUsers([...users, newUserData]);
-    handleCloseAddAccountForm(); // Close the form after submission
+    handleCloseAddAccountForm();
   };
 
-  const handleEditAccount = (id) => {
-    alert(`Chỉnh sửa tài khoản với ID: ${id}`);
+  const handleShowEditAccountForm = (user) => {
+    setEditUser(user); // Set the user to be edited
+    setShowEditAccountForm(true); // Show the edit form
+  };
+
+  const handleCloseEditAccountForm = () => {
+    setShowEditAccountForm(false);
+    setEditUser(null); // Clear the user being edited
+  };
+
+  const handleEditAccount = (e) => {
+    e.preventDefault();
+    setUsers(
+      users.map((user) =>
+        user.id === editUser.id ? { ...editUser } : user
+      )
+    );
+    handleCloseEditAccountForm();
   };
 
   const handleLockAccount = (id) => {
     setUsers(
       users.map((user) =>
-        user.id === id ? { ...user, isLocked: !user.isLocked } : user
+        user.id === id
+          ? { ...user, isLocked: !user.isLocked, isActive: user.isLocked }
+          : user
       )
     );
   };
@@ -333,7 +362,7 @@ const AdminPage = ({ onLogout }) => {
                       <td>
                         <button
                           className="action-icon edit"
-                          onClick={() => handleEditAccount(user.id)}
+                          onClick={() => handleShowEditAccountForm(user)}
                           title="Sửa"
                         >
                           ✏️
@@ -367,6 +396,19 @@ const AdminPage = ({ onLogout }) => {
             <div className="add-account-form">
               <h3>Thêm Tài Khoản Mới</h3>
               <form onSubmit={handleAddAccount}>
+                <div className="form-group">
+                  <label>Hình Ảnh:</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageChange(e, setNewUser, newUser)}
+                  />
+                  {newUser.image && (
+                    <div className="image-preview">
+                      <img src={newUser.image} alt="Preview" />
+                    </div>
+                  )}
+                </div>
                 <div className="form-group">
                   <label>Tên Khách Hàng:</label>
                   <input
@@ -441,6 +483,108 @@ const AdminPage = ({ onLogout }) => {
                     type="button"
                     className="cancel-button"
                     onClick={handleCloseAddAccountForm}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Form Chỉnh Sửa Tài Khoản */}
+        {showEditAccountForm && editUser && (
+          <div className="edit-account-modal">
+            <div className="edit-account-form">
+              <h3>Chỉnh Sửa Tài Khoản</h3>
+              <form onSubmit={handleEditAccount}>
+                <div className="form-group">
+                  <label>Hình Ảnh:</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageChange(e, setEditUser, editUser)}
+                  />
+                  {editUser.image && (
+                    <div className="image-preview">
+                      <img src={editUser.image} alt="Preview" />
+                    </div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Tên Khách Hàng:</label>
+                  <input
+                    type="text"
+                    value={editUser.name}
+                    onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email:</label>
+                  <input
+                    type="email"
+                    value={editUser.email}
+                    onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Số Điện Thoại:</label>
+                  <input
+                    type="text"
+                    value={editUser.phone}
+                    onChange={(e) => setEditUser({ ...editUser, phone: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Mật Khẩu:</label>
+                  <input
+                    type="password"
+                    value={editUser.password}
+                    onChange={(e) => setEditUser({ ...editUser, password: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Loại Tài Khoản:</label>
+                  <select
+                    value={editUser.role}
+                    onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
+                  >
+                    <option value="Khách Hàng">Khách Hàng</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Hoạt Động:</label>
+                  <select
+                    value={editUser.isActive}
+                    onChange={(e) => setEditUser({ ...editUser, isActive: e.target.value === 'true' })}
+                  >
+                    <option value={true}>Có</option>
+                    <option value={false}>Không</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Khóa Tài Khoản:</label>
+                  <select
+                    value={editUser.isLocked}
+                    onChange={(e) => setEditUser({ ...editUser, isLocked: e.target.value === 'true' })}
+                  >
+                    <option value={false}>Không</option>
+                    <option value={true}>Có</option>
+                  </select>
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="submit-button">
+                    Lưu
+                  </button>
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={handleCloseEditAccountForm}
                   >
                     Hủy
                   </button>
