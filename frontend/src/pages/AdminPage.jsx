@@ -27,8 +27,9 @@ const AdminPage = ({ onLogout }) => {
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [showParkingListForm, setShowParkingListForm] = useState(false);
   const [showParkingForm, setShowParkingForm] = useState(false);
-  const [showStatisticsPopup, setShowStatisticsPopup] = useState(false); // State cho popup
-  const [showChart, setShowChart] = useState(false); // State để hiển thị biểu đồ trong popup
+  const [showStatisticsPopup, setShowStatisticsPopup] = useState(false);
+  const [showChart, setShowChart] = useState(false);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [users, setUsers] = useState([
     {
       id: 1,
@@ -64,10 +65,32 @@ const AdminPage = ({ onLogout }) => {
     isLocked: false,
     role: 'Khách Hàng',
   });
+  // Updated prices state to include basePrice and monthlyPrice
   const [prices, setPrices] = useState({
-    motorcycle: { basePrice: 2000, discount: 0 },
-    car: { basePrice: 5000, discount: 0 },
-    truck: { basePrice: 7000, discount: 0 },
+    car: { basePrice: 5000, monthlyPrice: 3600000 }, // Ô Tô
+    motorcycle: { basePrice: 2000, monthlyPrice: 1440000 }, // Xe Máy
+    truck: { basePrice: 7000, monthlyPrice: 5040000 }, // Xe Tải
+  });
+  // New state for discounts
+  const [discounts, setDiscounts] = useState({
+    car: {
+      oneMonth: 5, // 1 Tháng
+      threeMonths: 7, // 3 Tháng
+sixMonths: 12, // 6 Tháng
+      oneYear: 15, // 1 Năm
+    },
+    motorcycle: {
+      oneMonth: 3,
+      threeMonths: 5,
+      sixMonths: 7,
+      oneYear: 9,
+    },
+    truck: {
+      oneMonth: 7,
+      threeMonths: 9,
+      sixMonths: 15,
+      oneYear: 18,
+    },
   });
   const [parkingLots] = useState([
     {
@@ -133,8 +156,41 @@ const AdminPage = ({ onLogout }) => {
       { id: 'B40', isOccupied: true },
     ],
   });
-
-  // Dữ liệu thống kê mẫu
+  const [feedbacks] = useState([
+    {
+      id: 1,
+      customerName: 'Hồng vip pro',
+      phone: '0349837392',
+      feedback: 'Dịch vụ tốt',
+      rating: 5,
+      date: '12/03/2025',
+    },
+    {
+      id: 2,
+      customerName: 'Hồng vip pro',
+      phone: '0349837392',
+      feedback: 'Giá cả cao, hay giảm giá',
+      rating: 4,
+      date: '17/03/2025',
+    },
+    {
+      id: 3,
+      customerName: 'Hồng vip pro',
+      phone: '0349837392',
+      feedback: 'Giá cả cao, hay giảm giá',
+      rating: 4,
+      date: '20/03/2025',
+    },
+    {
+      id: 4,
+      customerName: 'Hồng vip pro',
+      phone: '0349837392',
+      feedback: 'Dịch vụ tốt',
+      rating: 5,
+      date: '27/03/2025',
+    },
+  ]);
+  const [feedbackSearchTerm, setFeedbackSearchTerm] = useState('');
   const [statistics] = useState({
     totalRevenue: 332540000,
     totalProfit: 300000000,
@@ -155,7 +211,6 @@ const AdminPage = ({ onLogout }) => {
     ],
   });
 
-  // Dữ liệu cho biểu đồ
   const chartData = {
     labels: statistics.dailyData.map((item) => item.date),
     datasets: [
@@ -322,20 +377,35 @@ const AdminPage = ({ onLogout }) => {
     setShowPriceForm(false);
   };
 
+  // Updated handler for price changes to handle both basePrice and monthlyPrice
   const handlePriceChange = (e, vehicleType) => {
     const { name, value } = e.target;
     setPrices((prevPrices) => ({
       ...prevPrices,
       [vehicleType]: {
         ...prevPrices[vehicleType],
-        [name]: value,
+        [name]: parseInt(value) || 0,
       },
     }));
   };
 
+  // Handler for discount changes (unchanged)
+  const handleDiscountChange = (e, vehicleType, duration) => {
+    const { value } = e.target;
+    setDiscounts((prevDiscounts) => ({
+      ...prevDiscounts,
+      [vehicleType]: {
+        ...prevDiscounts[vehicleType],
+        [duration]: parseInt(value) || 0,
+      },
+    }));
+  };
+
+  // Updated handler for saving prices (removed automatic calculation)
   const handleSavePrices = (e) => {
     e.preventDefault();
     console.log('Giá đã được lưu:', prices);
+    console.log('Giảm giá đã được lưu:', discounts);
     handleClosePriceForm();
   };
 
@@ -371,11 +441,43 @@ const AdminPage = ({ onLogout }) => {
 
   const handleCloseStatisticsPopup = () => {
     setShowStatisticsPopup(false);
-    setShowChart(false); // Ẩn biểu đồ khi đóng popup
+    setShowChart(false);
   };
 
   const handleShowChart = () => {
     setShowChart(true);
+  };
+
+  const handleShowFeedbackForm = () => {
+    setShowFeedbackForm(true);
+  };
+
+  const handleCloseFeedbackForm = () => {
+    setShowFeedbackForm(false);
+    setFeedbackSearchTerm('');
+  };
+
+  const handleFeedbackSearch = (e) => {
+    setFeedbackSearchTerm(e.target.value);
+  };
+
+  const filteredFeedbacks = feedbacks.filter(
+    (feedback) =>
+      feedback.customerName.toLowerCase().includes(feedbackSearchTerm.toLowerCase()) ||
+      feedback.phone.includes(feedbackSearchTerm) ||
+      feedback.feedback.toLowerCase().includes(feedbackSearchTerm.toLowerCase())
+  );
+
+  const renderStars = (rating) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <span key={i} style={{ color: i <= rating ? '#ffd700' : '#ccc' }}>
+          ★
+        </span>
+      );
+    }
+    return stars;
   };
 
   return (
@@ -422,7 +524,9 @@ const AdminPage = ({ onLogout }) => {
             <button className="function-button">Thêm Bãi Đỗ</button>
           </div>
           <div className="function-item">
-            <button className="function-button">Đánh Giá và Phản Hồi</button>
+            <button className="function-button" onClick={handleShowFeedbackForm}>
+              Đánh Giá và Phản Hồi
+            </button>
           </div>
           <div className="function-item">
             <button className="function-button" onClick={handleShowPriceForm}>
@@ -725,91 +829,275 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Form Quản Lý Giá */}
+        {/* Updated Form Quản Lý Giá with Editable Monthly Price */}
         {showPriceForm && (
           <div className="price-form-modal">
             <div className="price-form">
               <h3>Quản Lý Giá</h3>
               <form onSubmit={handleSavePrices}>
-                <div className="form-group">
-                  <label>Xe Máy:</label>
-                  <div className="price-inputs">
-                    <input
-                      type="number"
-                      name="basePrice"
-                      value={prices.motorcycle.basePrice}
-                      onChange={(e) => handlePriceChange(e, 'motorcycle')}
-                      placeholder="Giá cơ bản (VNĐ)"
-                      required
-                    />
-                    <input
-                      type="number"
-                      name="discount"
-                      value={prices.motorcycle.discount}
-                      onChange={(e) => handlePriceChange(e, 'motorcycle')}
-                      placeholder="Giảm giá (%)"
-                      min="0"
-                      max="100"
-                      required
-                    />
-                  </div>
+                {/* Bảng Giá Dịch Vụ */}
+                <div className="price-table-container">
+                  <h4>Bảng Giá Dịch Vụ</h4>
+                  <table className="price-table">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>Giá (Theo giờ)</th>
+                        <th>Giá Theo Tháng</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Ô Tô</td>
+                        <td>
+                          <input
+                            type="number"
+                            name="basePrice"
+                            value={prices.car.basePrice}
+                            onChange={(e) => handlePriceChange(e, 'car')}
+                            min="0"
+                            required
+                          />
+                          VNĐ
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            name="monthlyPrice"
+                            value={prices.car.monthlyPrice}
+                            onChange={(e) => handlePriceChange(e, 'car')}
+                            min="0"
+                            required
+                          />
+                          VNĐ
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Xe Máy</td>
+                        <td>
+                          <input
+                            type="number"
+                            name="basePrice"
+                            value={prices.motorcycle.basePrice}
+                            onChange={(e) => handlePriceChange(e, 'motorcycle')}
+                            min="0"
+                            required
+                          />
+                          VNĐ
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            name="monthlyPrice"
+                            value={prices.motorcycle.monthlyPrice}
+                            onChange={(e) => handlePriceChange(e, 'motorcycle')}
+                            min="0"
+                            required
+                          />
+                          VNĐ
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>Xe Tải</td>
+                        <td>
+                          <input
+                            type="number"
+                            name="basePrice"
+                            value={prices.truck.basePrice}
+                            onChange={(e) => handlePriceChange(e, 'truck')}
+                            min="0"
+                            required
+                          />
+                          VNĐ
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            name="monthlyPrice"
+                            value={prices.truck.monthlyPrice}
+                            onChange={(e) => handlePriceChange(e, 'truck')}
+                            min="0"
+                            required
+                          />
+                          VNĐ
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <div className="form-group">
-                  <label>Ô Tô:</label>
-                  <div className="price-inputs">
-                    <input
-                      type="number"
-                      name="basePrice"
-                      value={prices.car.basePrice}
-                      onChange={(e) => handlePriceChange(e, 'car')}
-                      placeholder="Giá cơ bản (VNĐ)"
-                      required
-                    />
-                    <input
-                      type="number"
-                      name="discount"
-                      value={prices.car.discount}
-                      onChange={(e) => handlePriceChange(e, 'car')}
-                      placeholder="Giảm giá (%)"
-                      min="0"
-                      max="100"
-                      required
-                    />
-                  </div>
+
+                {/* Bảng Giảm Giá */}
+                <div className="discount-table-container">
+                  <h4>Bảng Giảm Giá</h4>
+                  <table className="discount-table">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>Ô Tô</th>
+                        <th>Xe Máy</th>
+                        <th>Xe Tải</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>1 Tháng</td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.car.oneMonth}
+                            onChange={(e) => handleDiscountChange(e, 'car', 'oneMonth')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.motorcycle.oneMonth}
+                            onChange={(e) => handleDiscountChange(e, 'motorcycle', 'oneMonth')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.truck.oneMonth}
+                            onChange={(e) => handleDiscountChange(e, 'truck', 'oneMonth')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>3 Tháng</td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.car.threeMonths}
+                            onChange={(e) => handleDiscountChange(e, 'car', 'threeMonths')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.motorcycle.threeMonths}
+                            onChange={(e) => handleDiscountChange(e, 'motorcycle', 'threeMonths')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.truck.threeMonths}
+                            onChange={(e) => handleDiscountChange(e, 'truck', 'threeMonths')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>6 Tháng</td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.car.sixMonths}
+                            onChange={(e) => handleDiscountChange(e, 'car', 'sixMonths')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.motorcycle.sixMonths}
+                            onChange={(e) => handleDiscountChange(e, 'motorcycle', 'sixMonths')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.truck.sixMonths}
+                            onChange={(e) => handleDiscountChange(e, 'truck', 'sixMonths')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>1 Năm</td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.car.oneYear}
+                            onChange={(e) => handleDiscountChange(e, 'car', 'oneYear')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.motorcycle.oneYear}
+                            onChange={(e) => handleDiscountChange(e, 'motorcycle', 'oneYear')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={discounts.truck.oneYear}
+                            onChange={(e) => handleDiscountChange(e, 'truck', 'oneYear')}
+                            min="0"
+                            max="100"
+                            required
+                          />
+                          %
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <div className="form-group">
-                  <label>Xe Tải:</label>
-                  <div className="price-inputs">
-                    <input
-                      type="number"
-                      name="basePrice"
-                      value={prices.truck.basePrice}
-                      onChange={(e) => handlePriceChange(e, 'truck')}
-                      placeholder="Giá cơ bản (VNĐ)"
-                      required
-                    />
-                    <input
-                      type="number"
-                      name="discount"
-                      value={prices.truck.discount}
-                      onChange={(e) => handlePriceChange(e, 'truck')}
-                      placeholder="Giảm giá (%)"
-                      min="0"
-                      max="100"
-                      required
-                    />
-                  </div>
-                </div>
+
+                {/* Form Actions */}
                 <div className="form-actions">
                   <button type="submit" className="submit-button">
-                    Lưu
+                    Cập Nhật
                   </button>
                   <button
                     type="button"
                     className="cancel-button"
                     onClick={handleClosePriceForm}
                   >
-                    Hủy
+                    Hủy <span className="cancel-icon">✖</span>
                   </button>
                 </div>
               </form>
@@ -912,6 +1200,51 @@ const AdminPage = ({ onLogout }) => {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Form Đánh Giá và Phản Hồi */}
+        {showFeedbackForm && (
+          <div className="feedback-form">
+            <div className="feedback-form-header">
+              <h3>Đánh Giá và Phản Hồi</h3>
+              <div className="form-actions">
+                <input
+                  type="text"
+                  placeholder="Tìm Kiếm..."
+                  value={feedbackSearchTerm}
+                  onChange={handleFeedbackSearch}
+                  className="search-input"
+                />
+                <button className="close-button" onClick={handleCloseFeedbackForm}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+            <div className="table-container">
+              <table className="feedback-table">
+                <thead>
+                  <tr>
+                    <th>Khách Hàng</th>
+                    <th>Số Điện Thoại</th>
+                    <th>Phản Hồi</th>
+                    <th>Đánh Giá</th>
+                    <th>Ngày Nhận</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredFeedbacks.map((feedback) => (
+                    <tr key={feedback.id}>
+                      <td>{feedback.customerName}</td>
+                      <td>{feedback.phone}</td>
+                      <td>{feedback.feedback}</td>
+                      <td>{renderStars(feedback.rating)}</td>
+                      <td>{feedback.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

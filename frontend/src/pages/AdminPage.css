@@ -390,31 +390,6 @@
   background-color: #c82333;
 }
 
-/* Price Form */
-.admin-page .price-inputs {
-  display: flex;
-  gap: 10px;
-}
-
-.admin-page .price-inputs input {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 16px;
-}
-
-.admin-page .price-inputs input[type="number"]::-webkit-inner-spin-button,
-.admin-page .price-inputs input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.admin-page .price-inputs input[type="number"] {
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
 /* Form Quản Lý Bãi */
 .admin-page .parking-list-form {
   position: absolute;
@@ -615,7 +590,6 @@
   color: #333;
 }
 
-/* === SẮP XẾP CÁC NÚT === */
 .admin-page .admin-page-form-actions {
   display: flex;
   gap: 10px;
@@ -711,7 +685,7 @@
   color: #666;
 }
 
-/* === BẢNG KÉO DÀI RA 20% === */
+
 .admin-page .admin-page-stats-table-container {
   position: relative;
   background-color: #fff;
@@ -768,4 +742,202 @@
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   margin-top: 20px;
+}
+/* Form Đánh Giá và Phản Hồi */
+.admin-page .feedback-form {
+  position: absolute;
+  top: 50%;
+  left: 21%;
+  transform: translateY(-50%);
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  width: 78%;
+  max-width: none;
+  z-index: 1000;
+  overflow-x: auto;
+}
+
+.admin-page .feedback-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.admin-page .feedback-form-header h3 {
+  font-size: 24px;
+  color: #333;
+}
+
+.admin-page .feedback-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+
+.admin-page .feedback-table th,
+.admin-page .feedback-table td {
+  padding: 12px;
+  border: 1px solid #ddd;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.admin-page .feedback-table th {
+  background-color: rgba(245, 245, 245, 0.5);
+  color: #333;
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.admin-page .feedback-table td {
+  background-color: rgba(255, 255, 255, 0.5);
+  color: #333;
+}
+
+.admin-page .feedback-table tbody tr:hover {
+  background-color: rgba(249, 249, 249, 0.5);
+}
+/* Price Table */
+.admin-page .price-form {
+  position: absolute;
+  top: 50%;
+  left: 21%;
+  transform: translateY(-50%);
+  background-color: rgba(255, 255, 255, 0.521);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  width: 50%;
+  max-width: none;
+  z-index: 1000;
+}
+.admin-page .price-table-container {
+  margin-bottom: 20px;
+}
+
+.admin-page .price-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+  border: 2px solid #d81b60; /* Pink border as in the image */
+}
+
+.admin-page .price-table th,
+.admin-page .price-table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.admin-page .price-table th {
+  background-color: #f5f5f5;
+  color: #333;
+  font-weight: bold;
+}
+
+.admin-page .price-table td {
+  background-color: #fff;
+}
+
+.admin-page .price-table td:first-child {
+  background-color: #e0e0e0; /* Gray background for the first column */
+}
+
+.admin-page .price-table input {
+  width: 100px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  text-align: center;
+}
+/* Discount Table */
+.admin-page .discount-table-container {
+  margin-bottom: 20px;
+}
+
+.admin-page .discount-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+  border: 2px solid #d81b60; /* Pink border as in the image */
+}
+
+.admin-page .discount-table th,
+.admin-page .discount-table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.admin-page .discount-table th {
+  background-color: #f5f5f5;
+  color: #333;
+  font-weight: bold;
+}
+
+.admin-page .discount-table td {
+  background-color: #fff;
+}
+
+.admin-page .discount-table td:first-child {
+  background-color: #e0e0e0; /* Gray background for the first column */
+}
+
+.admin-page .discount-table input {
+  width: 60px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  text-align: center;
+}
+
+/* Form Actions */
+.admin-page .form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.admin-page .submit-button {
+  padding: 8px 16px;
+  background-color: #28a745; /* Green as in the image */
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.admin-page .submit-button:hover {
+  background-color: #218838;
+}
+
+.admin-page .cancel-button {
+  padding: 8px 16px;
+  background-color: #dc3545; /* Red as in the image */
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-page .cancel-button:hover {
+  background-color: #c82333;
+}
+
+.admin-page .cancel-icon {
+  font-size: 14px;
 }
