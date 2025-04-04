@@ -1,7 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Bar } from 'react-chartjs-2'; // Thêm Bar từ react-chartjs-2
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js'; // Cấu hình Chart.js
 import backgroundImage from '../assets/image.png';
 import './AdminPage.css';
+
+// Đăng ký các thành phần của Chart.js
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const AdminPage = ({ onLogout }) => {
   const navigate = useNavigate();
@@ -9,8 +22,12 @@ const AdminPage = ({ onLogout }) => {
   const [username, setUsername] = useState('');
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [showAddAccountForm, setShowAddAccountForm] = useState(false);
-  const [showEditAccountForm, setShowEditAccountForm] = useState(false); // New state for edit form
-  const [editUser, setEditUser] = useState(null); // Store the user being edited
+  const [showEditAccountForm, setShowEditAccountForm] = useState(false);
+  const [editUser, setEditUser] = useState(null);
+  const [showPriceForm, setShowPriceForm] = useState(false);
+  const [showParkingListForm, setShowParkingListForm] = useState(false);
+  const [showParkingForm, setShowParkingForm] = useState(false);
+  const [showStatisticsForm, setShowStatisticsForm] = useState(false);
   const [users, setUsers] = useState([
     {
       id: 1,
@@ -34,94 +51,6 @@ const AdminPage = ({ onLogout }) => {
       isLocked: true,
       role: 'Admin',
     },
-    {
-      id: 3,
-      image: 'https://via.placeholder.com/50',
-      name: 'Tên mới',
-      email: 'emailmoi@example.com',
-      phone: '0123456789',
-      password: 'newpassword',
-      isActive: true,
-      isLocked: false,
-      role: 'Khách Hàng',
-    },
-    {
-      id: 4,
-      image: 'https://via.placeholder.com/50',
-      name: 'Tên mới',
-      email: 'emailmoi@example.com',
-      phone: '0123456789',
-      password: 'newpassword',
-      isActive: true,
-      isLocked: false,
-      role: 'Khách Hàng',
-    },
-    {
-      id: 5,
-      image: 'https://via.placeholder.com/50',
-      name: 'Tên mới',
-      email: 'emailmoi@example.com',
-      phone: '0123456789',
-      password: 'newpassword',
-      isActive: true,
-      isLocked: false,
-      role: 'Khách Hàng',
-    },
-    {
-      id: 6,
-      image: 'https://via.placeholder.com/50',
-      name: 'Tên mới',
-      email: 'emailmoi@example.com',
-      phone: '0123456789',
-      password: 'newpassword',
-      isActive: true,
-      isLocked: false,
-      role: 'Khách Hàng',
-    },
-    {
-      id: 7,
-      image: 'https://via.placeholder.com/50',
-      name: 'Tên mới',
-      email: 'emailmoi@example.com',
-      phone: '0123456789',
-      password: 'newpassword',
-      isActive: true,
-      isLocked: false,
-      role: 'Khách Hàng',
-    },
-    {
-      id: 8,
-      image: 'https://via.placeholder.com/50',
-      name: 'Tên mới',
-      email: 'emailmoi@example.com',
-      phone: '0123456789',
-      password: 'newpassword',
-      isActive: true,
-      isLocked: false,
-      role: 'Khách Hàng',
-    },
-    {
-      id: 9,
-      image: 'https://via.placeholder.com/50',
-      name: 'Tên mới',
-      email: 'emailmoi@example.com',
-      phone: '0123456789',
-      password: 'newpassword',
-      isActive: true,
-      isLocked: false,
-      role: 'Khách Hàng',
-    },
-    {
-      id: 10,
-      image: 'https://via.placeholder.com/50',
-      name: 'Tên mới',
-      email: 'emailmoi@example.com',
-      phone: '0123456789',
-      password: 'newpassword',
-      isActive: true,
-      isLocked: false,
-      role: 'Khách Hàng',
-    },
   ]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newUser, setNewUser] = useState({
@@ -134,6 +63,133 @@ const AdminPage = ({ onLogout }) => {
     isLocked: false,
     role: 'Khách Hàng',
   });
+  const [prices, setPrices] = useState({
+    motorcycle: { basePrice: 5000, discount: 10 },
+    car: { basePrice: 20000, discount: 15 },
+    truck: { basePrice: 30000, discount: 20 },
+  });
+  const [parkingLots] = useState([
+    {
+      id: 1,
+      name: 'Bãi đỗ Hoa Khánh',
+      image: 'imagebai4.jpg',
+      availableSlots: 7,
+      price: 15000,
+    },
+    {
+      id: 2,
+      name: 'Bãi đỗ Trung Tâm',
+      image: 'imagebai3.jpg',
+      availableSlots: 5,
+      price: 15000,
+    },
+  ]);
+  const [parkingSlots, setParkingSlots] = useState({
+    motorcycle: [
+      { id: 'B1', isOccupied: false },
+      { id: 'B2', isOccupied: true },
+      { id: 'B3', isOccupied: false },
+      { id: 'B4', isOccupied: true },
+      { id: 'B5', isOccupied: false },
+      { id: 'B6', isOccupied: true },
+      { id: 'B7', isOccupied: false },
+      { id: 'B8', isOccupied: true },
+      { id: 'B9', isOccupied: false },
+      { id: 'B10', isOccupied: true },
+    ],
+    car: [
+      { id: 'B11', isOccupied: false },
+      { id: 'B12', isOccupied: true },
+      { id: 'B13', isOccupied: false },
+      { id: 'B14', isOccupied: true },
+      { id: 'B15', isOccupied: false },
+      { id: 'B16', isOccupied: true },
+      { id: 'B17', isOccupied: false },
+      { id: 'B18', isOccupied: true },
+      { id: 'B19', isOccupied: false },
+      { id: 'B20', isOccupied: true },
+      { id: 'B21', isOccupied: false },
+      { id: 'B22', isOccupied: true },
+      { id: 'B23', isOccupied: false },
+      { id: 'B24', isOccupied: true },
+      { id: 'B25', isOccupied: false },
+      { id: 'B26', isOccupied: true },
+      { id: 'B27', isOccupied: false },
+      { id: 'B28', isOccupied: true },
+      { id: 'B29', isOccupied: false },
+      { id: 'B30', isOccupied: true },
+    ],
+    truck: [
+      { id: 'B31', isOccupied: false },
+      { id: 'B32', isOccupied: true },
+      { id: 'B33', isOccupied: false },
+      { id: 'B34', isOccupied: true },
+      { id: 'B35', isOccupied: false },
+      { id: 'B36', isOccupied: true },
+      { id: 'B37', isOccupied: false },
+      { id: 'B38', isOccupied: true },
+      { id: 'B39', isOccupied: false },
+      { id: 'B40', isOccupied: true },
+    ],
+  });
+
+  // Dữ liệu thống kê mẫu
+  const [statistics] = useState({
+    totalRevenue: 28561001,
+    totalCapital: 1869000,
+    totalProfit: 28492001,
+    dailyData: [
+      { date: '1/1/2020', revenue: 40000000, capital: 0 },
+      { date: '2/1/2020', revenue: 30000000, capital: 0 },
+      { date: '3/1/2020', revenue: 35000000, capital: 0 },
+      { date: '4/1/2020', revenue: 0, capital: 0 },
+      { date: '5/1/2020', revenue: 50000000, capital: 1000000 },
+      { date: '6/1/2020', revenue: 25000000, capital: 0 },
+      { date: '7/1/2020', revenue: 20000000, capital: 0 },
+      { date: '8/1/2020', revenue: 0, capital: 0 },
+    ],
+  });
+
+  // Dữ liệu cho biểu đồ
+  const chartData = {
+    labels: statistics.dailyData.map((item) => item.date),
+    datasets: [
+      {
+        label: 'Doanh thu',
+        data: statistics.dailyData.map((item) => item.revenue),
+        backgroundColor: '#007bff',
+      },
+      {
+        label: 'Tiền vốn',
+        data: statistics.dailyData.map((item) => item.capital),
+        backgroundColor: '#ff4d4d',
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'DOANH THU VÀ TIỀN VỐN THEO THỜI GIAN',
+        font: {
+          size: 18,
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value) => `${value / 1000000}M`,
+        },
+      },
+    },
+  };
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
@@ -210,13 +266,13 @@ const AdminPage = ({ onLogout }) => {
   };
 
   const handleShowEditAccountForm = (user) => {
-    setEditUser(user); // Set the user to be edited
-    setShowEditAccountForm(true); // Show the edit form
+    setEditUser(user);
+    setShowEditAccountForm(true);
   };
 
   const handleCloseEditAccountForm = () => {
     setShowEditAccountForm(false);
-    setEditUser(null); // Clear the user being edited
+    setEditUser(null);
   };
 
   const handleEditAccount = (e) => {
@@ -253,6 +309,65 @@ const AdminPage = ({ onLogout }) => {
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleShowPriceForm = () => {
+    setShowPriceForm(true);
+  };
+
+  const handleClosePriceForm = () => {
+    setShowPriceForm(false);
+  };
+
+  const handlePriceChange = (e, vehicleType) => {
+    const { name, value } = e.target;
+    setPrices((prevPrices) => ({
+      ...prevPrices,
+      [vehicleType]: {
+        ...prevPrices[vehicleType],
+        [name]: value,
+      },
+    }));
+  };
+
+  const handleSavePrices = (e) => {
+    e.preventDefault();
+    console.log('Giá đã được lưu:', prices);
+    handleClosePriceForm();
+  };
+
+  const handleShowParkingListForm = () => {
+    setShowParkingListForm(true);
+  };
+
+  const handleCloseParkingListForm = () => {
+    setShowParkingListForm(false);
+  };
+
+  const handleViewParkingLot = (lotId) => {
+    setShowParkingListForm(false);
+    setShowParkingForm(true);
+  };
+
+  const handleCloseParkingForm = () => {
+    setShowParkingForm(false);
+  };
+
+  const handleToggleSlot = (vehicleType, slotId) => {
+    setParkingSlots((prevSlots) => ({
+      ...prevSlots,
+      [vehicleType]: prevSlots[vehicleType].map((slot) =>
+        slot.id === slotId ? { ...slot, isOccupied: !slot.isOccupied } : slot
+      ),
+    }));
+  };
+
+  const handleShowStatisticsForm = () => {
+    setShowStatisticsForm(true);
+  };
+
+  const handleCloseStatisticsForm = () => {
+    setShowStatisticsForm(false);
+  };
+
   return (
     <div className="admin-page">
       {/* Header */}
@@ -275,7 +390,7 @@ const AdminPage = ({ onLogout }) => {
         </div>
       </div>
 
-      {/* Nội dung chính với hình nền inline */}
+      {/* Nội dung chính */}
       <div
         className="main-content"
         style={{
@@ -285,7 +400,7 @@ const AdminPage = ({ onLogout }) => {
           backgroundRepeat: 'no-repeat',
         }}
       >
-        {/* Khu vực chức năng ở góc trái */}
+        {/* Khu vực chức năng */}
         <div className="function-box">
           <h3>Chức năng</h3>
           <div className="function-item">
@@ -297,16 +412,22 @@ const AdminPage = ({ onLogout }) => {
             <button className="function-button">Thêm Bãi Đỗ</button>
           </div>
           <div className="function-item">
-            <button className="function-button">Xử Lý Vi Phạm</button>
+            <button className="function-button">Đánh Giá và Phản Hồi</button>
           </div>
           <div className="function-item">
-            <button className="function-button">Quản Lý Giá</button>
+            <button className="function-button" onClick={handleShowPriceForm}>
+              Quản Lý Giá
+            </button>
           </div>
           <div className="function-item">
-            <button className="function-button">Quản Lý Bãi Đỗ</button>
+            <button className="function-button" onClick={handleShowParkingListForm}>
+              Quản Lý Bãi
+            </button>
           </div>
           <div className="function-item">
-            <button className="function-button">Thống Kê</button>
+            <button className="function-button" onClick={handleShowStatisticsForm}>
+              Thống Kê
+            </button>
           </div>
         </div>
 
@@ -590,6 +711,249 @@ const AdminPage = ({ onLogout }) => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Form Quản Lý Giá */}
+        {showPriceForm && (
+          <div className="price-form-modal">
+            <div className="price-form">
+              <h3>Quản Lý Giá</h3>
+              <form onSubmit={handleSavePrices}>
+                <div className="form-group">
+                  <label>Xe Máy:</label>
+                  <div className="price-inputs">
+                    <input
+                      type="number"
+                      name="basePrice"
+                      value={prices.motorcycle.basePrice}
+                      onChange={(e) => handlePriceChange(e, 'motorcycle')}
+                      placeholder="Giá cơ bản (VNĐ)"
+                      required
+                    />
+                    <input
+                      type="number"
+                      name="discount"
+                      value={prices.motorcycle.discount}
+                      onChange={(e) => handlePriceChange(e, 'motorcycle')}
+                      placeholder="Giảm giá (%)"
+                      min="0"
+                      max="100"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Ô Tô:</label>
+                  <div className="price-inputs">
+                    <input
+                      type="number"
+                      name="basePrice"
+                      value={prices.car.basePrice}
+                      onChange={(e) => handlePriceChange(e, 'car')}
+                      placeholder="Giá cơ bản (VNĐ)"
+                      required
+                    />
+                    <input
+                      type="number"
+                      name="discount"
+                      value={prices.car.discount}
+                      onChange={(e) => handlePriceChange(e, 'car')}
+                      placeholder="Giảm giá (%)"
+                      min="0"
+                      max="100"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Xe Tải:</label>
+                  <div className="price-inputs">
+                    <input
+                      type="number"
+                      name="basePrice"
+                      value={prices.truck.basePrice}
+                      onChange={(e) => handlePriceChange(e, 'truck')}
+                      placeholder="Giá cơ bản (VNĐ)"
+                      required
+                    />
+                    <input
+                      type="number"
+                      name="discount"
+                      value={prices.truck.discount}
+                      onChange={(e) => handlePriceChange(e, 'truck')}
+                      placeholder="Giảm giá (%)"
+                      min="0"
+                      max="100"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="submit-button">
+                    Lưu
+                  </button>
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={handleClosePriceForm}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Form Quản Lý Bãi */}
+        {showParkingListForm && (
+          <div className="parking-list-form">
+            <div className="parking-list-header">
+              <h3>Quản Lý Bãi</h3>
+              <div className="form-actions">
+                <button className="close-button" onClick={handleCloseParkingListForm}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+            <div className="parking-lots">
+              {parkingLots.map((lot) => (
+                <div key={lot.id} className="parking-lot-card">
+                  <img src={lot.image} alt={lot.name} className="parking-lot-image" />
+                  <div className="parking-lot-info">
+                    <h4>{lot.name}</h4>
+                    <p>Số chỗ trống: {lot.availableSlots}</p>
+                    <p>{lot.price.toLocaleString()} VNĐ/giờ</p>
+                    <button
+                      className="view-button"
+                      onClick={() => handleViewParkingLot(lot.id)}
+                    >
+                      Xem ngay
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Form Quản Lý Bãi Đỗ */}
+        {showParkingForm && (
+          <div className="parking-form">
+            <div className="parking-form-header">
+              <h3>Quản Lý Bãi Đỗ</h3>
+              <div className="form-actions">
+                <button className="close-button" onClick={handleCloseParkingForm}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+            <div className="parking-lot">
+              <h4>
+                Số chỗ trống còn lại: {parkingSlots.motorcycle.filter(slot => !slot.isOccupied).length + parkingSlots.car.filter(slot => !slot.isOccupied).length + parkingSlots.truck.filter(slot => !slot.isOccupied).length}
+              </h4>
+              <div className="vehicle-section">
+                <div className="vehicle-label">
+                  <span role="img" aria-label="Xe máy">🏍️</span> Xe máy
+                </div>
+                <div className="slots">
+                  {parkingSlots.motorcycle.map((slot) => (
+                    <button
+                      key={slot.id}
+                      className={`slot ${slot.isOccupied ? 'occupied' : 'available'}`}
+                      onClick={() => handleToggleSlot('motorcycle', slot.id)}
+                    >
+                      {slot.id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="vehicle-section">
+                <div className="vehicle-label">
+                  <span role="img" aria-label="Ô tô">🚗</span> Ô tô
+                </div>
+                <div className="slots">
+                  {parkingSlots.car.map((slot) => (
+                    <button
+                      key={slot.id}
+                      className={`slot ${slot.isOccupied ? 'occupied' : 'available'}`}
+                      onClick={() => handleToggleSlot('car', slot.id)}
+                    >
+                      {slot.id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="vehicle-section">
+                <div className="vehicle-label">
+                  <span role="img" aria-label="Xe tải">🚚</span> Xe tải
+                </div>
+                <div className="slots">
+                  {parkingSlots.truck.map((slot) => (
+                    <button
+                      key={slot.id}
+                      className={`slot ${slot.isOccupied ? 'occupied' : 'available'}`}
+                      onClick={() => handleToggleSlot('truck', slot.id)}
+                    >
+                      {slot.id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Form Thống Kê */}
+        {showStatisticsForm && (
+          <div className="statistics-form">
+            <div className="statistics-header">
+              <h3>Thống Kê</h3>
+              <div className="form-actions">
+                <label>Ngày bắt đầu:</label>
+                <input type="date" defaultValue="2020-01-01" className="date-input" />
+                <label>Ngày kết thúc:</label>
+                <input type="date" defaultValue="2020-09-01" className="date-input" />
+                <button className="filter-button">Lọc dữ liệu</button>
+                <button className="close-button" onClick={handleCloseStatisticsForm}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+            <div className="stats-overview">
+              <div className="stats-card">
+                <span className="stats-icon">💰</span>
+                <div className="stats-info">
+                  <h4>Doanh thu</h4>
+                  <p>{statistics.totalRevenue.toLocaleString()} VNĐ</p>
+                </div>
+              </div>
+              <div className="stats-card">
+                <span className="stats-icon">📈</span>
+                <div className="stats-info">
+                  <h4>Tổng vốn (trừ vận hành)</h4>
+                  <p>{statistics.totalCapital.toLocaleString()} VNĐ</p>
+                </div>
+              </div>
+              <div className="stats-card">
+                <span className="stats-icon">📉</span>
+                <div className="stats-info">
+                  <h4>Trừ hàng</h4>
+                  <p>0 VNĐ</p>
+                </div>
+              </div>
+              <div className="stats-card">
+                <span className="stats-icon">💸</span>
+                <div className="stats-info">
+                  <h4>Lợi nhuận</h4>
+                  <p>{statistics.totalProfit.toLocaleString()} VNĐ</p>
+                </div>
+              </div>
+            </div>
+            <div className="chart-container">
+              <Bar data={chartData} options={chartOptions} />
             </div>
           </div>
         )}
