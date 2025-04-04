@@ -116,6 +116,9 @@ function App() {
 
   // Đồng bộ trạng thái khi ứng dụng khởi động
   useEffect(() => {
+    // Xóa localStorage khi ứng dụng khởi động
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('role');
     syncAuthState();
   }, []);
 
@@ -177,7 +180,6 @@ function App() {
     setIsLoggedIn(false);
     setUser(null);
     setIsDropdownOpen(false);
-    // Gửi sự kiện để đồng bộ trạng thái trên các tab khác
     window.dispatchEvent(new Event('storage'));
   };
 
@@ -200,7 +202,6 @@ function App() {
   return (
     <Router>
       <div className="app">
-        {/* Header chỉ hiển thị trên các trang không phải admin */}
         <Header
           isLoggedIn={isLoggedIn}
           user={user}
@@ -209,8 +210,6 @@ function App() {
           dropdownRef={dropdownRef}
           handleLogout={handleLogout}
         />
-
-        {/* Routes */}
         <Routes>
           <Route path="/" element={<HomePage isLoggedIn={isLoggedIn} />} />
           <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />

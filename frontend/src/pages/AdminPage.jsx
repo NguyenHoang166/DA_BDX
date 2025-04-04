@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bar } from 'react-chartjs-2'; // Thêm Bar từ react-chartjs-2
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,7 +9,7 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js'; // Cấu hình Chart.js
+} from 'chart.js';
 import backgroundImage from '../assets/image.png';
 import './AdminPage.css';
 
@@ -27,7 +27,8 @@ const AdminPage = ({ onLogout }) => {
   const [showPriceForm, setShowPriceForm] = useState(false);
   const [showParkingListForm, setShowParkingListForm] = useState(false);
   const [showParkingForm, setShowParkingForm] = useState(false);
-  const [showStatisticsForm, setShowStatisticsForm] = useState(false);
+  const [showStatisticsPopup, setShowStatisticsPopup] = useState(false); // State cho popup
+  const [showChart, setShowChart] = useState(false); // State để hiển thị biểu đồ trong popup
   const [users, setUsers] = useState([
     {
       id: 1,
@@ -64,9 +65,9 @@ const AdminPage = ({ onLogout }) => {
     role: 'Khách Hàng',
   });
   const [prices, setPrices] = useState({
-    motorcycle: { basePrice: 5000, discount: 10 },
-    car: { basePrice: 20000, discount: 15 },
-    truck: { basePrice: 30000, discount: 20 },
+    motorcycle: { basePrice: 2000, discount: 0 },
+    car: { basePrice: 5000, discount: 0 },
+    truck: { basePrice: 7000, discount: 0 },
   });
   const [parkingLots] = useState([
     {
@@ -135,9 +136,13 @@ const AdminPage = ({ onLogout }) => {
 
   // Dữ liệu thống kê mẫu
   const [statistics] = useState({
-    totalRevenue: 28561001,
-    totalCapital: 1869000,
-    totalProfit: 28492001,
+    totalRevenue: 332540000,
+    totalProfit: 300000000,
+    parkingStats: [
+      { type: 'Xe máy', pricePerHour: 2000, totalHours: 50000, totalRevenue: 100000000 },
+      { type: 'Ô tô', pricePerHour: 5000, totalHours: 20000, totalRevenue: 100000000 },
+      { type: 'Xe tải', pricePerHour: 7000, totalHours: 4648, totalRevenue: 332540000 },
+    ],
     dailyData: [
       { date: '1/1/2020', revenue: 40000000, capital: 0 },
       { date: '2/1/2020', revenue: 30000000, capital: 0 },
@@ -360,12 +365,17 @@ const AdminPage = ({ onLogout }) => {
     }));
   };
 
-  const handleShowStatisticsForm = () => {
-    setShowStatisticsForm(true);
+  const handleShowStatisticsPopup = () => {
+    setShowStatisticsPopup(true);
   };
 
-  const handleCloseStatisticsForm = () => {
-    setShowStatisticsForm(false);
+  const handleCloseStatisticsPopup = () => {
+    setShowStatisticsPopup(false);
+    setShowChart(false); // Ẩn biểu đồ khi đóng popup
+  };
+
+  const handleShowChart = () => {
+    setShowChart(true);
   };
 
   return (
@@ -425,7 +435,7 @@ const AdminPage = ({ onLogout }) => {
             </button>
           </div>
           <div className="function-item">
-            <button className="function-button" onClick={handleShowStatisticsForm}>
+            <button className="function-button" onClick={handleShowStatisticsPopup}>
               Thống Kê
             </button>
           </div>
@@ -906,54 +916,70 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Form Thống Kê */}
-        {showStatisticsForm && (
-          <div className="statistics-form">
-            <div className="statistics-header">
-              <h3>Thống Kê</h3>
-              <div className="form-actions">
-                <label>Ngày bắt đầu:</label>
-                <input type="date" defaultValue="2020-01-01" className="date-input" />
-                <label>Ngày kết thúc:</label>
-                <input type="date" defaultValue="2020-09-01" className="date-input" />
-                <button className="filter-button">Lọc dữ liệu</button>
-                <button className="close-button" onClick={handleCloseStatisticsForm}>
-                  Đóng
+        {/* Popup Thống Kê */}
+        {showStatisticsPopup && (
+          <div className="admin-page-statistics-popup-overlay">
+            <div className="admin-page-statistics-popup">
+              <div className="admin-page-statistics-header">
+                <h3>Thống Kê</h3>
+                <div className="admin-page-form-actions">
+                  <label>Ngày bắt đầu:</label>
+                  <input type="date" defaultValue="2025-03-19" className="admin-page-date-input" />
+                  <label>Ngày kết thúc:</label>
+                  <input type="date" defaultValue="2025-03-19" className="admin-page-date-input" />
+                  <button className="admin-page-filter-button">Tìm kiếm</button>
+                  <button className="admin-page-export-button">Xuất Excel</button>
+                  <button className="admin-page-close-button" onClick={handleCloseStatisticsPopup}>
+                    Đóng
+                  </button>
+                </div>
+              </div>
+              <div className="admin-page-stats-overview">
+                <div className="admin-page-stats-card">
+                  <span className="admin-page-stats-icon">💰</span>
+                  <div className="admin-page-stats-info">
+                    <h4>Doanh thu</h4>
+                    <p>{statistics.totalRevenue.toLocaleString()} VNĐ</p>
+                  </div>
+                </div>
+                <div className="admin-page-stats-card">
+                  <span className="admin-page-stats-icon">💸</span>
+                  <div className="admin-page-stats-info">
+                    <h4>Lợi nhuận</h4>
+                    <p>{statistics.totalProfit.toLocaleString()} VNĐ</p>
+                  </div>
+                </div>
+              </div>
+              <div className="admin-page-stats-table-container">
+                <table className="admin-page-stats-table">
+                  <thead>
+                    <tr>
+                      <th>Loại vị trí đỗ</th>
+                      <th>Giá thuê</th>
+                      <th>Tổng giờ thuê</th>
+                      <th>Tổng tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {statistics.parkingStats.map((stat, index) => (
+                      <tr key={index}>
+                        <td>{stat.type}</td>
+                        <td>{stat.pricePerHour.toLocaleString()} VNĐ/h</td>
+                        <td>{stat.totalHours.toLocaleString()}</td>
+                        <td>{stat.totalRevenue.toLocaleString()} VNĐ</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <button className="admin-page-chart-toggle-button" onClick={handleShowChart}>
+                  📊
                 </button>
               </div>
-            </div>
-            <div className="stats-overview">
-              <div className="stats-card">
-                <span className="stats-icon">💰</span>
-                <div className="stats-info">
-                  <h4>Doanh thu</h4>
-                  <p>{statistics.totalRevenue.toLocaleString()} VNĐ</p>
+              {showChart && (
+                <div className="admin-page-chart-container">
+                  <Bar data={chartData} options={chartOptions} />
                 </div>
-              </div>
-              <div className="stats-card">
-                <span className="stats-icon">📈</span>
-                <div className="stats-info">
-                  <h4>Tổng vốn (trừ vận hành)</h4>
-                  <p>{statistics.totalCapital.toLocaleString()} VNĐ</p>
-                </div>
-              </div>
-              <div className="stats-card">
-                <span className="stats-icon">📉</span>
-                <div className="stats-info">
-                  <h4>Trừ hàng</h4>
-                  <p>0 VNĐ</p>
-                </div>
-              </div>
-              <div className="stats-card">
-                <span className="stats-icon">💸</span>
-                <div className="stats-info">
-                  <h4>Lợi nhuận</h4>
-                  <p>{statistics.totalProfit.toLocaleString()} VNĐ</p>
-                </div>
-              </div>
-            </div>
-            <div className="chart-container">
-              <Bar data={chartData} options={chartOptions} />
+              )}
             </div>
           </div>
         )}
