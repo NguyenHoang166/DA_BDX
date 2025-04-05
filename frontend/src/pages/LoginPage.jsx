@@ -10,20 +10,23 @@ function LoginPage({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Email:', email, 'Password:', password); 
+    console.log('Email:', email, 'Password:', password);
     const success = onLogin(email, password);
-    console.log('Login success:', success); 
+    console.log('Login success:', success);
     if (success) {
-      
       const role = email === 'admin@example.com' ? 'Admin' : 'Người dùng';
+      // Lấy username từ email (phần trước ký tự @)
+      const username = email.split('@')[0]; // Ví dụ: admin@example.com -> admin
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('role', role);
-      console.log('Role after login:', role); 
+      localStorage.setItem('username', username); // Lưu username vào localStorage
+      console.log('Role after login:', role);
+      console.log('Username saved:', username);
 
       if (role === 'Admin') {
-        navigate('/admin', { replace: true }); 
+        navigate('/admin', { replace: true });
       } else {
-        navigate('/customer', { replace: true }); 
+        navigate('/customer', { replace: true });
       }
     } else {
       setError('Email hoặc mật khẩu không đúng!');

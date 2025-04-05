@@ -30,6 +30,10 @@ const AdminPage = ({ onLogout }) => {
   const [showStatisticsPopup, setShowStatisticsPopup] = useState(false);
   const [showChart, setShowChart] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [showAddParkingLotForm, setShowAddParkingLotForm] = useState(false);
+  // Thêm trạng thái để hiển thị form cập nhật bãi đỗ
+  const [showEditParkingLotForm, setShowEditParkingLotForm] = useState(false);
+  const [editParkingLot, setEditParkingLot] = useState(null);
   const [users, setUsers] = useState([
     {
       id: 1,
@@ -65,19 +69,17 @@ const AdminPage = ({ onLogout }) => {
     isLocked: false,
     role: 'Khách Hàng',
   });
-  // Updated prices state to include basePrice and monthlyPrice
   const [prices, setPrices] = useState({
-    car: { basePrice: 5000, monthlyPrice: 3600000 }, // Ô Tô
-    motorcycle: { basePrice: 2000, monthlyPrice: 1440000 }, // Xe Máy
-    truck: { basePrice: 7000, monthlyPrice: 5040000 }, // Xe Tải
+    car: { basePrice: 5000, monthlyPrice: 3600000 },
+    motorcycle: { basePrice: 2000, monthlyPrice: 1440000 },
+    truck: { basePrice: 7000, monthlyPrice: 5040000 },
   });
-  // New state for discounts
   const [discounts, setDiscounts] = useState({
     car: {
-      oneMonth: 5, // 1 Tháng
-      threeMonths: 7, // 3 Tháng
-sixMonths: 12, // 6 Tháng
-      oneYear: 15, // 1 Năm
+      oneMonth: 5,
+      threeMonths: 7,
+      sixMonths: 12,
+      oneYear: 15,
     },
     motorcycle: {
       oneMonth: 3,
@@ -92,7 +94,7 @@ sixMonths: 12, // 6 Tháng
       oneYear: 18,
     },
   });
-  const [parkingLots] = useState([
+  const [parkingLots, setParkingLots] = useState([
     {
       id: 1,
       name: 'Bãi đỗ Hoa Khánh',
@@ -107,7 +109,20 @@ sixMonths: 12, // 6 Tháng
       availableSlots: 5,
       price: 15000,
     },
+    {
+      id: 3,
+      name: 'bãi đỗ nguyệt đỏ',
+      image: 'imagebai3.jpg',
+      availableSlots: 50,
+      price: 0,
+    },
   ]);
+  const [newParkingLot, setNewParkingLot] = useState({
+    name: '',
+    image: 'https://via.placeholder.com/150',
+    availableSlots: 0,
+    price: 0,
+  });
   const [parkingSlots, setParkingSlots] = useState({
     motorcycle: [
       { id: 'B1', isOccupied: false },
@@ -300,11 +315,11 @@ sixMonths: 12, // 6 Tháng
     });
   };
 
-  const handleImageChange = (e, setUserFunction, user) => {
+  const handleImageChange = (e, setFunction, obj) => {
     const file = e.target.files[0];
     if (file) {
       const imageUrl = URL.createObjectURL(file);
-      setUserFunction({ ...user, image: imageUrl });
+      setFunction({ ...obj, image: imageUrl });
     }
   };
 
@@ -377,7 +392,6 @@ sixMonths: 12, // 6 Tháng
     setShowPriceForm(false);
   };
 
-  // Updated handler for price changes to handle both basePrice and monthlyPrice
   const handlePriceChange = (e, vehicleType) => {
     const { name, value } = e.target;
     setPrices((prevPrices) => ({
@@ -389,7 +403,6 @@ sixMonths: 12, // 6 Tháng
     }));
   };
 
-  // Handler for discount changes (unchanged)
   const handleDiscountChange = (e, vehicleType, duration) => {
     const { value } = e.target;
     setDiscounts((prevDiscounts) => ({
@@ -401,7 +414,6 @@ sixMonths: 12, // 6 Tháng
     }));
   };
 
-  // Updated handler for saving prices (removed automatic calculation)
   const handleSavePrices = (e) => {
     e.preventDefault();
     console.log('Giá đã được lưu:', prices);
@@ -468,6 +480,59 @@ sixMonths: 12, // 6 Tháng
       feedback.feedback.toLowerCase().includes(feedbackSearchTerm.toLowerCase())
   );
 
+  const handleShowAddParkingLotForm = () => {
+    setShowAddParkingLotForm(true);
+  };
+
+  const handleCloseAddParkingLotForm = () => {
+    setShowAddParkingLotForm(false);
+    setNewParkingLot({
+      name: '',
+      image: 'https://via.placeholder.com/150',
+      availableSlots: 0,
+      price: 0,
+    });
+  };
+
+  const handleAddParkingLot = (e) => {
+    e.preventDefault();
+    const newLot = {
+      id: parkingLots.length + 1,
+      name: newParkingLot.name,
+      image: newParkingLot.image,
+      availableSlots: parseInt(newParkingLot.availableSlots) || 0,
+      price: parseInt(newParkingLot.price) || 0,
+    };
+    setParkingLots([...parkingLots, newLot]);
+    handleCloseAddParkingLotForm();
+  };
+
+  // Hàm xử lý hiển thị form cập nhật bãi đỗ
+  const handleShowEditParkingLotForm = (lot) => {
+    setEditParkingLot(lot);
+    setShowEditParkingLotForm(true);
+  };
+
+  const handleCloseEditParkingLotForm = () => {
+    setShowEditParkingLotForm(false);
+    setEditParkingLot(null);
+  };
+
+  const handleEditParkingLot = (e) => {
+    e.preventDefault();
+    setParkingLots(
+      parkingLots.map((lot) =>
+        lot.id === editParkingLot.id ? { ...editParkingLot } : lot
+      )
+    );
+    handleCloseEditParkingLotForm();
+  };
+
+  // Hàm xử lý xóa bãi đỗ
+  const handleDeleteParkingLot = (id) => {
+    setParkingLots(parkingLots.filter((lot) => lot.id !== id));
+  };
+
   const renderStars = (rating) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -484,7 +549,7 @@ sixMonths: 12, // 6 Tháng
     <div className="admin-page">
       {/* Header */}
       <div className="header">
-        <div className="logo">AUTOLOT</div>
+        <div className="logo">ADMIN</div>
         <div className="header-icons">
           <span className="icon">🔍</span>
           <span className="icon">🔔</span>
@@ -519,9 +584,6 @@ sixMonths: 12, // 6 Tháng
             <button className="function-button" onClick={handleShowAccountForm}>
               Quản Lý Tài Khoản
             </button>
-          </div>
-          <div className="function-item">
-            <button className="function-button">Thêm Bãi Đỗ</button>
           </div>
           <div className="function-item">
             <button className="function-button" onClick={handleShowFeedbackForm}>
@@ -1111,6 +1173,9 @@ sixMonths: 12, // 6 Tháng
             <div className="parking-list-header">
               <h3>Quản Lý Bãi</h3>
               <div className="form-actions">
+                <button className="add-account-button" onClick={handleShowAddParkingLotForm}>
+                  Thêm Bãi Đỗ
+                </button>
                 <button className="close-button" onClick={handleCloseParkingListForm}>
                   Đóng
                 </button>
@@ -1124,15 +1189,159 @@ sixMonths: 12, // 6 Tháng
                     <h4>{lot.name}</h4>
                     <p>Số chỗ trống: {lot.availableSlots}</p>
                     <p>{lot.price.toLocaleString()} VNĐ/giờ</p>
-                    <button
-                      className="view-button"
-                      onClick={() => handleViewParkingLot(lot.id)}
-                    >
-                      Xem ngay
-                    </button>
+                    <div className="parking-lot-actions">
+                      <button
+                        className="view-button"
+                        onClick={() => handleViewParkingLot(lot.id)}
+                      >
+                        Xem ngay
+                      </button>
+                      <button
+                        className="edit-button"
+                        onClick={() => handleShowEditParkingLotForm(lot)}
+                      >
+                        Cập Nhật
+                      </button>
+                      <button
+                        className="delete-button"
+                        onClick={() => handleDeleteParkingLot(lot.id)}
+                      >
+                        Xóa
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Form Thêm Bãi Đỗ */}
+        {showAddParkingLotForm && (
+          <div className="add-account-modal">
+            <div className="add-account-form">
+              <h3>Thêm Bãi Đỗ Mới</h3>
+              <form onSubmit={handleAddParkingLot}>
+                <div className="form-group">
+                  <label>Hình Ảnh:</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageChange(e, setNewParkingLot, newParkingLot)}
+                  />
+                  {newParkingLot.image && (
+                    <div className="image-preview">
+                      <img src={newParkingLot.image} alt="Preview" />
+                    </div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Tên Bãi Đỗ:</label>
+                  <input
+                    type="text"
+                    value={newParkingLot.name}
+                    onChange={(e) => setNewParkingLot({ ...newParkingLot, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Số Chỗ Trống:</label>
+                  <input
+                    type="number"
+                    value={newParkingLot.availableSlots}
+                    onChange={(e) => setNewParkingLot({ ...newParkingLot, availableSlots: e.target.value })}
+                    min="0"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Giá Tiền (VNĐ/giờ):</label>
+                  <input
+                    type="number"
+                    value={newParkingLot.price}
+                    onChange={(e) => setNewParkingLot({ ...newParkingLot, price: e.target.value })}
+                    min="0"
+                    required
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="submit-button">
+                    Thêm
+                  </button>
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={handleCloseAddParkingLotForm}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Form Cập Nhật Bãi Đỗ */}
+        {showEditParkingLotForm && editParkingLot && (
+          <div className="add-account-modal">
+            <div className="add-account-form">
+              <h3>Cập Nhật Bãi Đỗ</h3>
+              <form onSubmit={handleEditParkingLot}>
+                <div className="form-group">
+                  <label>Hình Ảnh:</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageChange(e, setEditParkingLot, editParkingLot)}
+                  />
+                  {editParkingLot.image && (
+                    <div className="image-preview">
+                      <img src={editParkingLot.image} alt="Preview" />
+                    </div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Tên Bãi Đỗ:</label>
+                  <input
+                    type="text"
+                    value={editParkingLot.name}
+                    onChange={(e) => setEditParkingLot({ ...editParkingLot, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Số Chỗ Trống:</label>
+                  <input
+                    type="number"
+                    value={editParkingLot.availableSlots}
+                    onChange={(e) => setEditParkingLot({ ...editParkingLot, availableSlots: e.target.value })}
+                    min="0"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Giá Tiền (VNĐ/giờ):</label>
+                  <input
+                    type="number"
+                    value={editParkingLot.price}
+                    onChange={(e) => setEditParkingLot({ ...editParkingLot, price: e.target.value })}
+                    min="0"
+                    required
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="submit-button">
+                    Lưu
+                  </button>
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={handleCloseEditParkingLotForm}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
