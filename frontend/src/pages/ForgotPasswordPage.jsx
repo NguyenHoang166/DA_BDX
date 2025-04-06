@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
 import './ForgotPasswordPage.css';
 
 function ForgotPasswordPage() {
@@ -10,28 +11,38 @@ function ForgotPasswordPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Kiểm tra email
+
     if (!email) {
       setError('Vui lòng nhập email!');
       setSuccess('');
       return;
     }
 
-    // Giả lập tạo mã xác nhận (OTP)
-    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Tạo mã 6 chữ số
-    console.log('Generated OTP:', otp); // Debug: Kiểm tra mã OTP
-    localStorage.setItem('resetPasswordOTP', otp); // Lưu mã vào localStorage
-    localStorage.setItem('resetPasswordEmail', email); // Lưu email để kiểm tra sau
-    console.log('Stored OTP in localStorage:', localStorage.getItem('resetPasswordOTP')); // Debug: Xác nhận lưu thành công
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    localStorage.setItem('resetPasswordOTP', otp);
+    localStorage.setItem('resetPasswordEmail', email);
 
-    // Giả lập gửi email thành công
-    setError('');
-    setSuccess(`Yêu cầu đã được gửi! Mã xác nhận của bạn là: ${otp}. Vui lòng kiểm tra email.`);
+    const templateParams = {
+      to_email: email,
+      otp: otp,
+    };
 
-    // Chuyển hướng đến trang thay đổi mật khẩu sau 2 giây
-    setTimeout(() => {
-      navigate('/change-password');
-    }, 2000);
+    emailjs
+      .send('service_lwg22j8', 'template_0w64mqm', templateParams, 'm_sqSMomHJTVzrxlP')
+      .then(
+        () => {
+          setError('');
+          setSuccess('Yêu cầu đã được gửi! Vui lòng kiểm tra email của bạn để lấy mã xác nhận.');
+          setTimeout(() => {
+            navigate('/change-password');
+          }, 2000);
+        },
+        (err) => {
+          setError('Có lỗi khi gửi email. Vui lòng thử lại!');
+          setSuccess('');
+          console.log(err);
+        }
+      );
   };
 
   return (
@@ -39,7 +50,7 @@ function ForgotPasswordPage() {
       <div className="auth-form">
         <h2 className="auth-title">Quên Mật Khẩu</h2>
         <p className="auth-subtitle">
-          Vui lòng nhập email của bạn để nhận liên kết đặt lại mật khẩu.
+          Vui lòng nhập email của bạn để nhận mã xác nhận đặt lại mật khẩu.
         </p>
         {error && <p className="error-message">{error}</p>}
         {success && <p className="success-message">{success}</p>}
