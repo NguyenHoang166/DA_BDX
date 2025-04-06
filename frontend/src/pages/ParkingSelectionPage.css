@@ -268,3 +268,155 @@
 .cancel-btn:hover {
   background-color: #5a6268;
 }
+/* Customer Info Form */
+.customer-info-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-group input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+/* Booking Details */
+.booking-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.detail-row.total {
+  font-weight: bold;
+  border-top: 1px solid #ddd;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+/* Payment Method Options */
+.payment-method-options {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.payment-method-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.payment-method-item input[type="radio"] {
+  margin-right: 5px;
+}
+/* Momo Payment Modal */
+.momo-payment-modal {
+  max-width: 800px; /* Wider modal to accommodate two sections */
+}
+
+.momo-payment-container {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.momo-qr-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.momo-qr-section h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.qr-placeholder {
+  width: 200px;
+  height: 200px;
+  background-color: #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  text-align: center;
+  color: #555;
+  font-size: 14px;
+}
+
+.momo-order-details {
+  flex: 1;
+}
+
+.momo-order-details h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #333;
+}
+.order-details-modal {
+  max-width: 500px;
+}
+/* VNPay Payment Modal */
+.vnpay-payment-modal {
+  max-width: 800px;
+}
+
+.vnpay-payment-container {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.vnpay-qr-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.vnpay-qr-section h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.vnpay-order-details {
+  flex: 1;
+}
+
+.vnpay-order-details h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #333;
+}
