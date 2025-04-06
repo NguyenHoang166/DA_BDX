@@ -60,14 +60,15 @@ export default function ParkingSelectionPage() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCustomerInfoModal, setShowCustomerInfoModal] = useState(false);
   const [showMomoPaymentModal, setShowMomoPaymentModal] = useState(false);
-  const [showVNPayPaymentModal, setShowVNPayPaymentModal] = useState(false); // New state for VNPay payment modal
+  const [showVNPayPaymentModal, setShowVNPayPaymentModal] = useState(false);
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false); // New state for review modal
   const [selectedLotForBooking, setSelectedLotForBooking] = useState(null);
+  const [selectedLotForReview, setSelectedLotForReview] = useState(null); // New state for selected lot for review
   const [selectedVehicleType, setSelectedVehicleType] = useState("");
   const [selectedPositions, setSelectedPositions] = useState([]);
   const [startDate, setStartDate] = useState("2025-03-19T07:00");
   const [endDate, setEndDate] = useState("2025-03-19T14:00");
-
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     phone: "",
@@ -75,6 +76,10 @@ export default function ParkingSelectionPage() {
     licensePlate: "",
   });
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
+  const [review, setReview] = useState({
+    rating: 0,
+    comment: "",
+  });
 
   // Lấy danh sách vị trí đỗ dựa trên loại xe
   const getAvailablePositions = () => {
@@ -156,10 +161,56 @@ export default function ParkingSelectionPage() {
     setEndDate("2025-03-19T14:00");
   };
 
+  // Mở modal đánh giá
+  const openReviewModal = (lot) => {
+    setSelectedLotForReview(lot);
+    setReview({ rating: 0, comment: "" });
+    setShowReviewModal(true);
+  };
+
+  // Đóng modal đánh giá
+  const closeReviewModal = () => {
+    setShowReviewModal(false);
+    setSelectedLotForReview(null);
+    setReview({ rating: 0, comment: "" });
+  };
+
   // Xử lý thay đổi thông tin khách hàng
   const handleCustomerInfoChange = (e) => {
     const { name, value } = e.target;
     setCustomerInfo({ ...customerInfo, [name]: value });
+  };
+
+  // Xử lý thay đổi thông tin đánh giá
+  const handleReviewChange = (e) => {
+    const { name, value } = e.target;
+    setReview({ ...review, [name]: value });
+  };
+
+  // Xử lý thay đổi số sao đánh giá
+  const handleRatingChange = (rating) => {
+    setReview({ ...review, rating });
+  };
+
+  // Xử lý gửi đánh giá
+  const handleSubmitReview = () => {
+    if (review.rating === 0) {
+      alert("Vui lòng chọn số sao đánh giá!");
+      return;
+    }
+    if (!review.comment.trim()) {
+      alert("Vui lòng nhập nhận xét!");
+      return;
+    }
+
+    console.log("Review submitted:", {
+      parkingLot: selectedLotForReview.name,
+      rating: review.rating,
+      comment: review.comment,
+    });
+
+    alert("Cảm ơn bạn đã gửi đánh giá!");
+    closeReviewModal();
   };
 
   // Xử lý khi nhấn "Đặt ngay" trong modal xem vị trí
@@ -196,7 +247,7 @@ export default function ParkingSelectionPage() {
       setShowMomoPaymentModal(true);
     } else if (selectedPaymentMethod === "vnpay") {
       setShowCustomerInfoModal(false);
-      setShowVNPayPaymentModal(true); // Open VNPay payment modal
+      setShowVNPayPaymentModal(true);
     } else {
       alert(
         `Đặt xe thành công!\n` +
@@ -241,6 +292,9 @@ export default function ParkingSelectionPage() {
             <div className="parking-buttons">
               <button className="booking-btn" onClick={() => openBookingModal(lot)}>
                 Xem ngay
+              </button>
+              <button className="review-btn" onClick={() => openReviewModal(lot)}>
+                Đánh giá
               </button>
             </div>
           </div>
@@ -708,6 +762,57 @@ export default function ParkingSelectionPage() {
             <div className="modal-buttons">
               <button className="confirm-btn" onClick={closeOrderDetailsModal}>
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal đánh giá */}
+      {showReviewModal && selectedLotForReview && (
+        <div className="modal-overlay">
+          <div className="modal-content review-modal">
+            <h2>Đánh giá bãi đỗ xe</h2>
+
+            <div className="modal-section">
+              <h3>{selectedLotForReview.name}</h3>
+              <p>Sức chứa: {selectedLotForReview.capacity}</p>
+              <p>Giá: {selectedLotForReview.price}</p>
+            </div>
+
+            <div className="modal-section">
+              <label>Đánh giá của bạn *</label>
+              <div className="rating-stars">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span
+                    key={star}
+                    className={`star ${review.rating >= star ? "filled" : ""}`}
+                    onClick={() => handleRatingChange(star)}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-section">
+              <label>Nhận xét *</label>
+              <textarea
+                name="comment"
+                value={review.comment}
+                onChange={handleReviewChange}
+                placeholder="Nhập nhận xét của bạn..."
+                rows="4"
+                required
+              />
+            </div>
+
+            <div className="modal-buttons">
+              <button className="confirm-btn" onClick={handleSubmitReview}>
+                Gửi đánh giá
+              </button>
+              <button className="cancel-btn" onClick={closeReviewModal}>
+                Hủy
               </button>
             </div>
           </div>
