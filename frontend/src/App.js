@@ -66,7 +66,7 @@ function Header({ isLoggedIn, user, toggleDropdown, isDropdownOpen, dropdownRef,
                     Thông Tin Cá Nhân
                   </Link>
                   <Link to="/invoice" className="dropdown-btn invoice-btn" onClick={() => toggleDropdown()}>
-                    Hóa Đơn
+                    Lịch Sử Thanh Toán
                   </Link>
                 </>
               )}

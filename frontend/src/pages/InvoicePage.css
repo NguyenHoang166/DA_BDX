@@ -1,9 +1,196 @@
-/* pages/InvoicePage.css */
+/* Scope all styles within .invoice-page to avoid affecting other pages */
 .invoice-page {
-    padding: 20px;
-    text-align: center;
+  margin: 0;
+  color: #fff; /* White text for better contrast against the background */
+  position: relative;
+  min-height: 100vh; /* Full viewport height */
+  width: 100vw; /* Full viewport width */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Center vertically */
+  align-items: center; /* Center horizontally */
+  box-sizing: border-box;
+  padding: 20px;
+}
+
+/* Add a semi-transparent overlay to improve readability */
+.invoice-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4); /* Dark overlay for better contrast */
+  z-index: 0;
+}
+
+.invoice-page > * {
+  position: relative;
+  z-index: 1; /* Ensure content is above the overlay */
+}
+
+.invoice-page h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 28px;
+  color: #fff; /* White text for the header */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); /* Add shadow for better readability */
+}
+
+.invoice-page .invoice-table-container {
+  width: 100%;
+  max-width: 800px; /* Limit the width of the table for better readability */
+  background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white background for the table */
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-page .invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.invoice-page .invoice-table th,
+.invoice-page .invoice-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  color: #333; /* Dark text for table content */
+}
+
+.invoice-page .invoice-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+.invoice-page .invoice-table td {
+  background-color: #fff;
+}
+
+.invoice-page .invoice-table tr:nth-child(even) td {
+  background-color: #f9f9f9;
+}
+
+.invoice-page .invoice-table tr:hover td {
+  background-color: #f1f1f1;
+}
+
+/* Style for the "Xem chi tiết" button */
+.invoice-page .details-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.invoice-page .details-btn:hover {
+  background-color: #0056b3;
+}
+
+/* Modal styles */
+.invoice-page .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.invoice-page .modal-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-page .modal-content h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #333;
+}
+
+.invoice-page .modal-section {
+  margin-bottom: 20px;
+}
+
+.invoice-page .modal-section h3 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.invoice-page .invoice-details .detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.invoice-page .invoice-details .detail-row span:first-child {
+  font-weight: bold;
+  color: #555;
+}
+
+.invoice-page .invoice-details .detail-row span:last-child {
+  color: #333;
+}
+
+.invoice-page .invoice-details .detail-row.total {
+  font-weight: bold;
+  color: #007bff;
+}
+
+.invoice-page .modal-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.invoice-page .close-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.invoice-page .close-btn:hover {
+  background-color: #c82333;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .invoice-page .invoice-table th,
+  .invoice-page .invoice-table td {
+    padding: 8px 10px;
+    font-size: 12px;
   }
-  
-  h1 {
-    color: green;
+
+  .invoice-page .modal-content {
+    max-width: 90%;
   }
+
+  .invoice-page .invoice-table-container {
+    max-width: 100%;
+  }
+}
