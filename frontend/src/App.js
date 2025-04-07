@@ -44,7 +44,9 @@ function Header({ isLoggedIn, user, toggleDropdown, isDropdownOpen, dropdownRef,
         <span className="logo-text">BMW AutoLot</span>
       </div>
       <nav className="nav">
-        <button className="nav-link">Giới Thiệu</button>
+      <Link to="/introduction" className="nav-link">
+    Giới Thiệu
+  </Link>
         <button className="nav-link">Hỗ Trợ</button>
         <button className="nav-link">Khuyến Mãi</button>
       </nav>

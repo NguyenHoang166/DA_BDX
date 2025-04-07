@@ -4,6 +4,8 @@ import backgroundImage from "../assets/image.png";
 import parkingAImage from "../assets/imagebai1.jpg";
 import parkingBImage from "../assets/imagebai2.jpg";
 import parkingCImage from "../assets/imagebai3.jpg";
+import { QRCodeCanvas } from "qrcode.react";
+import emailjs from "emailjs-com"; // Import EmailJS
 
 // Dữ liệu ảo: Danh sách bãi xe
 const parkingLots = [
@@ -56,15 +58,61 @@ const paymentMethods = [
   { value: "cash", label: "Tiền mặt" },
 ];
 
+// Hàm tạo mã ngẫu nhiên
+const generateRandomCode = () => {
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  for (let i = 0; i < 8; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+};
+
+// Hàm gửi email bằng EmailJS
+const sendOrderDetailsEmail = (orderDetails) => {
+  const templateParams = {
+    name: orderDetails.customerInfo.name,
+    phone: orderDetails.customerInfo.phone,
+    email: orderDetails.customerInfo.email,
+    licensePlate: orderDetails.customerInfo.licensePlate,
+    parkingLot: orderDetails.parkingLot,
+    positions: orderDetails.positions.join(", "),
+    vehicleType: orderDetails.vehicleType,
+    startDate: orderDetails.startDate,
+    endDate: orderDetails.endDate,
+    duration: orderDetails.duration,
+    total: orderDetails.total.toLocaleString(),
+    paymentMethod: orderDetails.paymentMethod,
+    qrCode: orderDetails.qrCode,
+    to_email: orderDetails.customerInfo.email, // Email khách hàng
+  };
+
+  emailjs
+    .send(
+      "service_gn0x2u3", // Thay bằng Service ID của bạn
+      "template_27s5kyo", // Thay bằng Template ID của bạn
+      templateParams,
+      "m_sqSMomHJTVzrxlP" // Thay bằng User ID của bạn
+    )
+    .then(
+      (response) => {
+        console.log("Email sent successfully!", response.status, response.text);
+      },
+      (error) => {
+        console.error("Failed to send email:", error);
+      }
+    );
+};
+
 export default function ParkingSelectionPage() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCustomerInfoModal, setShowCustomerInfoModal] = useState(false);
   const [showMomoPaymentModal, setShowMomoPaymentModal] = useState(false);
   const [showVNPayPaymentModal, setShowVNPayPaymentModal] = useState(false);
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
-  const [showReviewModal, setShowReviewModal] = useState(false); // New state for review modal
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedLotForBooking, setSelectedLotForBooking] = useState(null);
-  const [selectedLotForReview, setSelectedLotForReview] = useState(null); // New state for selected lot for review
+  const [selectedLotForReview, setSelectedLotForReview] = useState(null);
   const [selectedVehicleType, setSelectedVehicleType] = useState("");
   const [selectedPositions, setSelectedPositions] = useState([]);
   const [startDate, setStartDate] = useState("2025-03-19T07:00");
@@ -80,6 +128,8 @@ export default function ParkingSelectionPage() {
     rating: 0,
     comment: "",
   });
+  const [qrCode, setQrCode] = useState("");
+  const [orders, setOrders] = useState([]); // Dữ liệu ảo để lưu trữ đơn hàng
 
   // Lấy danh sách vị trí đỗ dựa trên loại xe
   const getAvailablePositions = () => {
@@ -159,6 +209,7 @@ export default function ParkingSelectionPage() {
     setSelectedPositions([]);
     setStartDate("2025-03-19T07:00");
     setEndDate("2025-03-19T14:00");
+    setQrCode("");
   };
 
   // Mở modal đánh giá
@@ -242,6 +293,23 @@ export default function ParkingSelectionPage() {
       return;
     }
 
+    const newQrCode = generateRandomCode();
+    const newOrder = {
+      id: orders.length + 1,
+      customerInfo: { ...customerInfo },
+      parkingLot: selectedLotForBooking.name,
+      positions: selectedPositions,
+      vehicleType: vehicleTypes.find((type) => type.value === selectedVehicleType).label,
+      startDate: new Date(startDate).toLocaleString(),
+      endDate: new Date(endDate).toLocaleString(),
+      duration: calculateDuration(),
+      total: selectedLotForBooking.unitPrice * calculateDuration() * selectedPositions.length,
+      paymentMethod: paymentMethods.find((method) => method.value === selectedPaymentMethod).label,
+      qrCode: newQrCode,
+    };
+    setOrders([...orders, newOrder]);
+    setQrCode(newQrCode);
+
     if (selectedPaymentMethod === "momo") {
       setShowCustomerInfoModal(false);
       setShowMomoPaymentModal(true);
@@ -249,35 +317,36 @@ export default function ParkingSelectionPage() {
       setShowCustomerInfoModal(false);
       setShowVNPayPaymentModal(true);
     } else {
-      alert(
-        `Đặt xe thành công!\n` +
-        `Thông tin khách hàng:\n` +
-        `Tên: ${customerInfo.name}\n` +
-        `Số điện thoại: ${customerInfo.phone}\n` +
-        `Email: ${customerInfo.email}\n` +
-        `Biển số xe: ${customerInfo.licensePlate}\n` +
-        `Thông tin đặt xe:\n` +
-        `Bãi xe: ${selectedLotForBooking.name}\n` +
-        `Vị trí: ${selectedPositions.join(", ")}\n` +
-        `Loại xe: ${vehicleTypes.find((type) => type.value === selectedVehicleType).label}\n` +
-        `Thời gian thuê: ${calculateDuration()} giờ\n` +
-        `Tổng giá: ${(selectedLotForBooking.unitPrice * calculateDuration() * selectedPositions.length).toLocaleString()} VNĐ\n` +
-        `Phương thức thanh toán: ${paymentMethods.find((method) => method.value === selectedPaymentMethod).label}`
-      );
-      closeCustomerInfoModal();
+      // Hiển thị modal chi tiết đơn hàng cho phương thức "Tiền mặt"
+      setShowCustomerInfoModal(false);
+      setShowOrderDetailsModal(true);
+
+      // Gửi email
+      sendOrderDetailsEmail(newOrder);
+      alert(`Hóa đơn đã được gửi đến email: ${customerInfo.email}`);
     }
   };
 
   // Xử lý khi xác nhận thanh toán Momo
   const handleMomoPaymentConfirmation = () => {
+    const newOrder = orders[orders.length - 1]; // Lấy đơn hàng vừa tạo
     setShowMomoPaymentModal(false);
     setShowOrderDetailsModal(true);
+
+    // Gửi email
+    sendOrderDetailsEmail(newOrder);
+    alert(`Hóa đơn đã được gửi đến email: ${customerInfo.email}`);
   };
 
   // Xử lý khi xác nhận thanh toán VNPay
   const handleVNPayPaymentConfirmation = () => {
+    const newOrder = orders[orders.length - 1]; // Lấy đơn hàng vừa tạo
     setShowVNPayPaymentModal(false);
     setShowOrderDetailsModal(true);
+
+    // Gửi email
+    sendOrderDetailsEmail(newOrder);
+    alert(`Hóa đơn đã được gửi đến email: ${customerInfo.email}`);
   };
 
   return (
@@ -413,7 +482,6 @@ export default function ParkingSelectionPage() {
             <h2>Thông tin khách hàng và xác nhận đặt xe</h2>
 
             <div className="modal-section">
-              <h3>Thông tin khách hàng</h3>
               <div className="customer-info-form">
                 <div className="form-group">
                   <label>Họ và tên *</label>
@@ -756,6 +824,22 @@ export default function ParkingSelectionPage() {
                   <span>Phương thức:</span>
                   <span>{paymentMethods.find((method) => method.value === selectedPaymentMethod).label}</span>
                 </div>
+              </div>
+            </div>
+
+            <div className="modal-section">
+              <h3>Mã QR để mở khóa cổng</h3>
+              <div className="booking-details">
+                <div className="detail-row">
+                  <span>Mã QR:</span>
+                  <span>{qrCode}</span>
+                </div>
+                {qrCode && (
+                  <div className="qr-code-container">
+                    <QRCodeCanvas value={qrCode} size={128} />
+                    <p>Quét mã QR này để mở khóa cổng</p>
+                  </div>
+                )}
               </div>
             </div>
 

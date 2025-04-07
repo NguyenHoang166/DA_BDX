@@ -272,7 +272,7 @@
 .customer-info-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 5px;
 }
 
 .form-group {
