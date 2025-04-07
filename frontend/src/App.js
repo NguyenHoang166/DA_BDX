@@ -26,11 +26,50 @@ function PrivateRoute({ children, isLoggedIn, role, allowedRole }) {
   return children;
 }
 
+// Component Popup Hỗ trợ
+function SupportPopup({ onClose }) {
+  return (
+    <div className="popup-overlay">
+      <div className="popup-content">
+        <h2>Hỗ Trợ Khách Hàng</h2>
+        <form>
+          <input type="text" placeholder="Họ và tên" required />
+          <input type="email" placeholder="Email" required />
+          <textarea placeholder="Nội dung cần hỗ trợ" required></textarea>
+          <div className="popup-buttons">
+            <button type="submit">Gửi</button>
+            <button type="button" onClick={onClose}>Đóng</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Component Popup Khuyến mãi
+function PromotionPopup({ onClose }) {
+  return (
+    <div className="popup-overlay">
+      <div className="popup-content">
+        <h2>Chương Trình Khuyến Mãi</h2>
+        <div className="promotion-content">
+          <h3>Ưu đãi hiện tại:</h3>
+          <ul>
+            <li>Giảm 20% phí đỗ xe cho khách hàng mới</li>
+            <li>Tặng 1 tháng miễn phí khi đăng ký gói năm</li>
+            <li>Giảm 10% cho thanh toán trước 6 tháng</li>
+          </ul>
+        </div>
+        <button onClick={onClose}>Đóng</button>
+      </div>
+    </div>
+  );
+}
+
 // Component để hiển thị header
-function Header({ isLoggedIn, user, toggleDropdown, isDropdownOpen, dropdownRef, handleLogout }) {
+function Header({ isLoggedIn, user, toggleDropdown, isDropdownOpen, dropdownRef, handleLogout, showSupportPopup, showPromotionPopup }) {
   const location = useLocation();
 
-  // Không hiển thị header trên trang admin
   if (location.pathname === '/admin') {
     return null;
   }
@@ -44,11 +83,9 @@ function Header({ isLoggedIn, user, toggleDropdown, isDropdownOpen, dropdownRef,
         <span className="logo-text">BMW AutoLot</span>
       </div>
       <nav className="nav">
-      <Link to="/introduction" className="nav-link">
-    Giới Thiệu
-  </Link>
-        <button className="nav-link">Hỗ Trợ</button>
-        <button className="nav-link">Khuyến Mãi</button>
+        <button className="nav-link">Giới Thiệu</button>
+        <button className="nav-link" onClick={showSupportPopup}>Hỗ Trợ</button>
+        <button className="nav-link" onClick={showPromotionPopup}>Khuyến Mãi</button>
       </nav>
       {isLoggedIn ? (
         <div className="dropdown" ref={dropdownRef}>
@@ -91,9 +128,10 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
+  const [showPromotion, setShowPromotion] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Hàm để đồng bộ trạng thái với localStorage
   const syncAuthState = () => {
     const storedIsLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     const storedRole = localStorage.getItem('role');
@@ -116,20 +154,16 @@ function App() {
     }
   };
 
-  // Đồng bộ trạng thái khi ứng dụng khởi động
   useEffect(() => {
-    // Xóa localStorage khi ứng dụng khởi động
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('role');
     syncAuthState();
   }, []);
 
-  // Theo dõi sự thay đổi của localStorage
   useEffect(() => {
     const handleStorageChange = () => {
       syncAuthState();
     };
-
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -201,6 +235,22 @@ function App() {
     };
   }, []);
 
+  const showSupportPopup = () => {
+    setShowSupport(true);
+  };
+
+  const showPromotionPopup = () => {
+    setShowPromotion(true);
+  };
+
+  const closeSupportPopup = () => {
+    setShowSupport(false);
+  };
+
+  const closePromotionPopup = () => {
+    setShowPromotion(false);
+  };
+
   return (
     <Router>
       <div className="app">
@@ -211,7 +261,11 @@ function App() {
           isDropdownOpen={isDropdownOpen}
           dropdownRef={dropdownRef}
           handleLogout={handleLogout}
+          showSupportPopup={showSupportPopup}
+          showPromotionPopup={showPromotionPopup}
         />
+        {showSupport && <SupportPopup onClose={closeSupportPopup} />}
+        {showPromotion && <PromotionPopup onClose={closePromotionPopup} />}
         <Routes>
           <Route path="/" element={<HomePage isLoggedIn={isLoggedIn} />} />
           <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
