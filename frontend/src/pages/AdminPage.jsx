@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import parkingAImage from "../assets/imagebai1.jpg"
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -13,7 +14,6 @@ import {
 import backgroundImage from '../assets/image.png';
 import './AdminPage.css';
 
-// Đăng ký các thành phần của Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const AdminPage = ({ onLogout }) => {
@@ -31,7 +31,6 @@ const AdminPage = ({ onLogout }) => {
   const [showChart, setShowChart] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showAddParkingLotForm, setShowAddParkingLotForm] = useState(false);
-  // Thêm trạng thái để hiển thị form cập nhật bãi đỗ
   const [showEditParkingLotForm, setShowEditParkingLotForm] = useState(false);
   const [editParkingLot, setEditParkingLot] = useState(null);
   const [users, setUsers] = useState([
@@ -75,48 +74,11 @@ const AdminPage = ({ onLogout }) => {
     truck: { basePrice: 7000, monthlyPrice: 5040000 },
   });
   const [discounts, setDiscounts] = useState({
-    car: {
-      oneMonth: 5,
-      threeMonths: 7,
-      sixMonths: 12,
-      oneYear: 15,
-    },
-    motorcycle: {
-      oneMonth: 3,
-      threeMonths: 5,
-      sixMonths: 7,
-      oneYear: 9,
-    },
-    truck: {
-      oneMonth: 7,
-      threeMonths: 9,
-      sixMonths: 15,
-      oneYear: 18,
-    },
+    car: { oneMonth: 5, threeMonths: 7, sixMonths: 12, oneYear: 15 },
+    motorcycle: { oneMonth: 3, threeMonths: 5, sixMonths: 7, oneYear: 9 },
+    truck: { oneMonth: 7, threeMonths: 9, sixMonths: 15, oneYear: 18 },
   });
-  const [parkingLots, setParkingLots] = useState([
-    {
-      id: 1,
-      name: 'Bãi đỗ Hoa Khánh',
-      image: 'imagebai4.jpg',
-      availableSlots: 7,
-      price: 15000,
-    },
-    {
-      id: 2,
-      name: 'Bãi đỗ Trung Tâm',
-      image: 'imagebai3.jpg',
-      availableSlots: 5,
-      price: 15000,
-    },
-    {
-      id: 3,
-      name: 'bãi đỗ nguyệt đỏ',
-      image: 'imagebai3.jpg',
-      availableSlots: 50,
-      price: 0,
-    },
-  ]);
+  const [parkingLots, setParkingLots] = useState([]); // Xóa dữ liệu ảo
   const [newParkingLot, setNewParkingLot] = useState({
     name: '',
     image: 'https://via.placeholder.com/150',
@@ -226,6 +188,17 @@ const AdminPage = ({ onLogout }) => {
     ],
   });
 
+  // State cho bãi đỗ từ ESP32
+  const [espParkingLot, setEspParkingLot] = useState({
+    id:1,
+    name: 'Bãi đỗ ESP32',
+    image: parkingAImage,
+    availableSlots: 0,
+    price: 5000,
+  });
+  const [espSlots, setEspSlots] = useState([]);
+  const [espEmptySlots, setEspEmptySlots] = useState(0);
+
   const chartData = {
     labels: statistics.dailyData.map((item) => item.date),
     datasets: [
@@ -278,6 +251,32 @@ const AdminPage = ({ onLogout }) => {
     } else {
       setUsername(storedUsername || 'Người dùng');
     }
+
+    // Kết nối WebSocket với ESP32
+    const socket = new WebSocket('ws://192.168.1.142:81'); // Thay 192.168.1.xxx bằng IP của ESP32
+
+    socket.onopen = () => {
+      console.log('Connected to ESP32 WebSocket');
+    };
+
+    socket.onmessage = (event) => {
+      const parsedData = JSON.parse(event.data);
+      setEspSlots(parsedData.slots);
+      setEspEmptySlots(parsedData.emptySlots);
+      setEspParkingLot((prev) => ({ ...prev, availableSlots: parsedData.emptySlots }));
+    };
+
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    socket.onclose = () => {
+      console.log('Disconnected from ESP32 WebSocket');
+    };
+
+    return () => {
+      socket.close();
+    };
   }, [navigate]);
 
   const handleLogout = () => {
@@ -352,11 +351,7 @@ const AdminPage = ({ onLogout }) => {
 
   const handleEditAccount = (e) => {
     e.preventDefault();
-    setUsers(
-      users.map((user) =>
-        user.id === editUser.id ? { ...editUser } : user
-      )
-    );
+    setUsers(users.map((user) => (user.id === editUser.id ? { ...editUser } : user)));
     handleCloseEditAccountForm();
   };
 
@@ -432,6 +427,29 @@ const AdminPage = ({ onLogout }) => {
   const handleViewParkingLot = (lotId) => {
     setShowParkingListForm(false);
     setShowParkingForm(true);
+    if (lotId === espParkingLot.id) {
+      setParkingSlots({
+        motorcycle: espSlots.map((slot) => ({ id: slot.id, isOccupied: slot.occupied })),
+        car: [],
+        truck: [],
+      });
+    } else {
+      setParkingSlots({
+        motorcycle: [
+          { id: 'B1', isOccupied: false },
+          { id: 'B2', isOccupied: true },
+          { id: 'B3', isOccupied: false },
+          { id: 'B4', isOccupied: true },
+          { id: 'B5', isOccupied: false },
+        ],
+        car: [
+        
+        ],
+        truck: [
+        
+        ],
+      });
+    }
   };
 
   const handleCloseParkingForm = () => {
@@ -507,10 +525,12 @@ const AdminPage = ({ onLogout }) => {
     handleCloseAddParkingLotForm();
   };
 
-  // Hàm xử lý hiển thị form cập nhật bãi đỗ
   const handleShowEditParkingLotForm = (lot) => {
     setEditParkingLot(lot);
     setShowEditParkingLotForm(true);
+    if (lot.id === espParkingLot.id) {
+      setEditParkingLot({ ...lot, availableSlots: espEmptySlots });
+    }
   };
 
   const handleCloseEditParkingLotForm = () => {
@@ -521,14 +541,14 @@ const AdminPage = ({ onLogout }) => {
   const handleEditParkingLot = (e) => {
     e.preventDefault();
     setParkingLots(
-      parkingLots.map((lot) =>
-        lot.id === editParkingLot.id ? { ...editParkingLot } : lot
-      )
+      parkingLots.map((lot) => (lot.id === editParkingLot.id ? { ...editParkingLot } : lot))
     );
+    if (editParkingLot.id === espParkingLot.id) {
+      setEspParkingLot({ ...editParkingLot, availableSlots: espEmptySlots });
+    }
     handleCloseEditParkingLotForm();
   };
 
-  // Hàm xử lý xóa bãi đỗ
   const handleDeleteParkingLot = (id) => {
     setParkingLots(parkingLots.filter((lot) => lot.id !== id));
   };
@@ -756,7 +776,9 @@ const AdminPage = ({ onLogout }) => {
                   <label>Hoạt Động:</label>
                   <select
                     value={newUser.isActive}
-                    onChange={(e) => setNewUser({ ...newUser, isActive: e.target.value === 'true' })}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, isActive: e.target.value === 'true' })
+                    }
                   >
                     <option value={true}>Có</option>
                     <option value={false}>Không</option>
@@ -766,7 +788,9 @@ const AdminPage = ({ onLogout }) => {
                   <label>Khóa Tài Khoản:</label>
                   <select
                     value={newUser.isLocked}
-                    onChange={(e) => setNewUser({ ...newUser, isLocked: e.target.value === 'true' })}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, isLocked: e.target.value === 'true' })
+                    }
                   >
                     <option value={false}>Không</option>
                     <option value={true}>Có</option>
@@ -858,7 +882,9 @@ const AdminPage = ({ onLogout }) => {
                   <label>Hoạt Động:</label>
                   <select
                     value={editUser.isActive}
-                    onChange={(e) => setEditUser({ ...editUser, isActive: e.target.value === 'true' })}
+                    onChange={(e) =>
+                      setEditUser({ ...editUser, isActive: e.target.value === 'true' })
+                    }
                   >
                     <option value={true}>Có</option>
                     <option value={false}>Không</option>
@@ -868,7 +894,9 @@ const AdminPage = ({ onLogout }) => {
                   <label>Khóa Tài Khoản:</label>
                   <select
                     value={editUser.isLocked}
-                    onChange={(e) => setEditUser({ ...editUser, isLocked: e.target.value === 'true' })}
+                    onChange={(e) =>
+                      setEditUser({ ...editUser, isLocked: e.target.value === 'true' })
+                    }
                   >
                     <option value={false}>Không</option>
                     <option value={true}>Có</option>
@@ -891,13 +919,12 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Updated Form Quản Lý Giá with Editable Monthly Price */}
+        {/* Form Quản Lý Giá */}
         {showPriceForm && (
           <div className="price-form-modal">
             <div className="price-form">
               <h3>Quản Lý Giá</h3>
               <form onSubmit={handleSavePrices}>
-                {/* Bảng Giá Dịch Vụ */}
                 <div className="price-table-container">
                   <h4>Bảng Giá Dịch Vụ</h4>
                   <table className="price-table">
@@ -988,7 +1015,6 @@ const AdminPage = ({ onLogout }) => {
                   </table>
                 </div>
 
-                {/* Bảng Giảm Giá */}
                 <div className="discount-table-container">
                   <h4>Bảng Giảm Giá</h4>
                   <table className="discount-table">
@@ -1149,16 +1175,11 @@ const AdminPage = ({ onLogout }) => {
                   </table>
                 </div>
 
-                {/* Form Actions */}
                 <div className="form-actions">
                   <button type="submit" className="submit-button">
                     Cập Nhật
                   </button>
-                  <button
-                    type="button"
-                    className="cancel-button"
-                    onClick={handleClosePriceForm}
-                  >
+                  <button type="button" className="cancel-button" onClick={handleClosePriceForm}>
                     Hủy <span className="cancel-icon">✖</span>
                   </button>
                 </div>
@@ -1182,7 +1203,7 @@ const AdminPage = ({ onLogout }) => {
               </div>
             </div>
             <div className="parking-lots">
-              {parkingLots.map((lot) => (
+              {[...parkingLots, espParkingLot].map((lot) => (
                 <div key={lot.id} className="parking-lot-card">
                   <img src={lot.image} alt={lot.name} className="parking-lot-image" />
                   <div className="parking-lot-info">
@@ -1204,7 +1225,8 @@ const AdminPage = ({ onLogout }) => {
                       </button>
                       <button
                         className="delete-button"
-                        onClick={() => handleDeleteParkingLot(lot.id)}
+                        onClick={() => lot.id !== espParkingLot.id && handleDeleteParkingLot(lot.id)}
+                        disabled={lot.id === espParkingLot.id}
                       >
                         Xóa
                       </button>
@@ -1240,7 +1262,9 @@ const AdminPage = ({ onLogout }) => {
                   <input
                     type="text"
                     value={newParkingLot.name}
-                    onChange={(e) => setNewParkingLot({ ...newParkingLot, name: e.target.value })}
+                    onChange={(e) =>
+                      setNewParkingLot({ ...newParkingLot, name: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -1249,7 +1273,9 @@ const AdminPage = ({ onLogout }) => {
                   <input
                     type="number"
                     value={newParkingLot.availableSlots}
-                    onChange={(e) => setNewParkingLot({ ...newParkingLot, availableSlots: e.target.value })}
+                    onChange={(e) =>
+                      setNewParkingLot({ ...newParkingLot, availableSlots: e.target.value })
+                    }
                     min="0"
                     required
                   />
@@ -1259,7 +1285,9 @@ const AdminPage = ({ onLogout }) => {
                   <input
                     type="number"
                     value={newParkingLot.price}
-                    onChange={(e) => setNewParkingLot({ ...newParkingLot, price: e.target.value })}
+                    onChange={(e) =>
+                      setNewParkingLot({ ...newParkingLot, price: e.target.value })
+                    }
                     min="0"
                     required
                   />
@@ -1305,7 +1333,9 @@ const AdminPage = ({ onLogout }) => {
                   <input
                     type="text"
                     value={editParkingLot.name}
-                    onChange={(e) => setEditParkingLot({ ...editParkingLot, name: e.target.value })}
+                    onChange={(e) =>
+                      setEditParkingLot({ ...editParkingLot, name: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -1313,9 +1343,16 @@ const AdminPage = ({ onLogout }) => {
                   <label>Số Chỗ Trống:</label>
                   <input
                     type="number"
-                    value={editParkingLot.availableSlots}
-                    onChange={(e) => setEditParkingLot({ ...editParkingLot, availableSlots: e.target.value })}
+                    value={
+                      editParkingLot.id === espParkingLot.id
+                        ? espEmptySlots
+                        : editParkingLot.availableSlots
+                    }
+                    onChange={(e) =>
+                      setEditParkingLot({ ...editParkingLot, availableSlots: e.target.value })
+                    }
                     min="0"
+                    disabled={editParkingLot.id === espParkingLot.id}
                     required
                   />
                 </div>
@@ -1324,7 +1361,9 @@ const AdminPage = ({ onLogout }) => {
                   <input
                     type="number"
                     value={editParkingLot.price}
-                    onChange={(e) => setEditParkingLot({ ...editParkingLot, price: e.target.value })}
+                    onChange={(e) =>
+                      setEditParkingLot({ ...editParkingLot, price: e.target.value })
+                    }
                     min="0"
                     required
                   />
@@ -1359,11 +1398,17 @@ const AdminPage = ({ onLogout }) => {
             </div>
             <div className="parking-lot">
               <h4>
-                Số chỗ trống còn lại: {parkingSlots.motorcycle.filter(slot => !slot.isOccupied).length + parkingSlots.car.filter(slot => !slot.isOccupied).length + parkingSlots.truck.filter(slot => !slot.isOccupied).length}
+                Số chỗ trống còn lại:{' '}
+                {parkingSlots.motorcycle.filter((slot) => !slot.isOccupied).length +
+                  parkingSlots.car.filter((slot) => !slot.isOccupied).length +
+                  parkingSlots.truck.filter((slot) => !slot.isOccupied).length}
               </h4>
               <div className="vehicle-section">
                 <div className="vehicle-label">
-                  <span role="img" aria-label="Xe máy">🏍️</span> Xe máy
+                  <span role="img" aria-label="Xe máy">
+                    🏍️
+                  </span>{' '}
+                  Xe máy
                 </div>
                 <div className="slots">
                   {parkingSlots.motorcycle.map((slot) => (
@@ -1379,7 +1424,10 @@ const AdminPage = ({ onLogout }) => {
               </div>
               <div className="vehicle-section">
                 <div className="vehicle-label">
-                  <span role="img" aria-label="Ô tô">🚗</span> Ô tô
+                  <span role="img" aria-label="Ô tô">
+                    🚗
+                  </span>{' '}
+                  Ô tô
                 </div>
                 <div className="slots">
                   {parkingSlots.car.map((slot) => (
@@ -1395,7 +1443,10 @@ const AdminPage = ({ onLogout }) => {
               </div>
               <div className="vehicle-section">
                 <div className="vehicle-label">
-                  <span role="img" aria-label="Xe tải">🚚</span> Xe tải
+                  <span role="img" aria-label="Xe tải">
+                    🚚
+                  </span>{' '}
+                  Xe tải
                 </div>
                 <div className="slots">
                   {parkingSlots.truck.map((slot) => (
@@ -1466,12 +1517,23 @@ const AdminPage = ({ onLogout }) => {
                 <h3>Thống Kê</h3>
                 <div className="admin-page-form-actions">
                   <label>Ngày bắt đầu:</label>
-                  <input type="date" defaultValue="2025-03-19" className="admin-page-date-input" />
+                  <input
+                    type="date"
+                    defaultValue="2025-03-19"
+                    className="admin-page-date-input"
+                  />
                   <label>Ngày kết thúc:</label>
-                  <input type="date" defaultValue="2025-03-19" className="admin-page-date-input" />
+                  <input
+                    type="date"
+                    defaultValue="2025-03-19"
+                    className="admin-page-date-input"
+                  />
                   <button className="admin-page-filter-button">Tìm kiếm</button>
                   <button className="admin-page-export-button">Xuất Excel</button>
-                  <button className="admin-page-close-button" onClick={handleCloseStatisticsPopup}>
+                  <button
+                    className="admin-page-close-button"
+                    onClick={handleCloseStatisticsPopup}
+                  >
                     Đóng
                   </button>
                 </div>

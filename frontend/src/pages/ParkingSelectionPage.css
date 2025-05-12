@@ -472,3 +472,49 @@ textarea:focus {
   outline: none;
   border-color: #007bff;
 }
+/* CSS cho modal xem vị trí (các phần khác giữ nguyên) */
+
+/* Style cho các vị trí đỗ */
+.position-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid white;
+  border-radius: 4px;
+  background-color: transparent;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* Vị trí trống (chưa chiếm) */
+.position-slot.available {
+  background-color: transparent;
+}
+
+/* Vị trí đã chọn */
+.position-slot.selected {
+  background-color: #007bff; /* Màu nền khi được chọn */
+  border-color: #007bff;
+}
+
+/* Vị trí đã chiếm (tô màu xanh lá cây) */
+.position-slot.occupied {
+  background-color: #28a745; /* Màu xanh lá cây */
+  border-color: #28a745;
+  cursor: not-allowed; /* Không cho phép click khi đã chiếm */
+}
+
+/* Hiệu ứng hover cho vị trí trống */
+.position-slot.available:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Loại bỏ hover cho vị trí đã chiếm */
+.position-slot.occupied:hover {
+  background-color: #28a745; /* Giữ nguyên màu khi hover */
+}
