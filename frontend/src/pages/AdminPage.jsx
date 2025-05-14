@@ -253,7 +253,7 @@ const AdminPage = ({ onLogout }) => {
     }
 
     // Kết nối WebSocket với ESP32
-    const socket = new WebSocket('ws://192.168.1.142:81'); // Thay 192.168.1.xxx bằng IP của ESP32
+    const socket = new WebSocket('ws://192.168.1.152:81'); // Thay 192.168.1.xxx bằng IP của ESP32
 
     socket.onopen = () => {
       console.log('Connected to ESP32 WebSocket');
