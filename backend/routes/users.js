@@ -15,4 +15,25 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.put('/:id', async (req, res) => {
+  const id = req.params.id;
+  const { username, email, password, role, created_at, image, phone, isActive, isLocked } = req.body;
+
+  try {
+    const [result] = await db.query(
+      'UPDATE users SET username = ?, email = ?, password = ?, role = ?, created_at = ?, image = ?, phone = ?, isActive = ?, isLocked = ? WHERE id = ?',
+      [username, email, password, role, created_at, image, phone, isActive, isLocked, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    res.status(200).json({ message: 'Cập nhật tài khoản thành công!' });
+  } catch (err) {
+    console.error('❌ Lỗi SQL:', err.message);
+    res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+});
+
 module.exports = router;

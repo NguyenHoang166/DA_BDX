@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users'); 
+const feedbackRoutes = require('./routes/feedback');
 require('dotenv').config();
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // Khởi động server
 const PORT = process.env.PORT || 5000;

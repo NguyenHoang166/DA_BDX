@@ -973,3 +973,19 @@
 .delete-button:hover {
   background-color: #b02a37;
 }
+.form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.feedback-table th,
+.feedback-table td {
+  padding: 8px;
+  text-align: left;
+}
+.feedback-table th:nth-child(5),
+.feedback-table td:nth-child(5) {
+  width: 15%; /* Điều chỉnh độ rộng cột Bãi Đỗ */
+}
