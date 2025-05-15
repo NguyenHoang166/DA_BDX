@@ -2,21 +2,21 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 
-function LoginPage({ onLogin }) { // Nhận onLogin từ App.js
+function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isAuthenticating, setIsAuthenticating] = useState(false); // Thêm trạng thái để theo dõi
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Xóa lỗi cũ
-    setIsAuthenticating(true); // Bắt đầu quá trình đăng nhập
+    setError('');
+    setIsAuthenticating(true);
 
     console.log('Attempting login with Email:', email, 'Password:', password);
     try {
-      const success = await onLogin(email, password, navigate); // Sử dụng onLogin từ props
+      const success = await onLogin(email, password, navigate);
       if (!success) {
         setError('Email hoặc mật khẩu không đúng!');
       }
@@ -24,7 +24,7 @@ function LoginPage({ onLogin }) { // Nhận onLogin từ App.js
       console.error('Error:', err);
       setError('Lỗi kết nối đến server!');
     } finally {
-      setIsAuthenticating(false); // Kết thúc quá trình đăng nhập
+      setIsAuthenticating(false);
     }
   };
 
@@ -45,7 +45,7 @@ function LoginPage({ onLogin }) { // Nhận onLogin từ App.js
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              disabled={isAuthenticating} // Vô hiệu hóa khi đang đăng nhập
+              disabled={isAuthenticating}
             />
           </div>
 
@@ -60,7 +60,7 @@ function LoginPage({ onLogin }) { // Nhận onLogin từ App.js
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              disabled={isAuthenticating} // Vô hiệu hóa khi đang đăng nhập
+              disabled={isAuthenticating}
             />
           </div>
 
@@ -73,7 +73,7 @@ function LoginPage({ onLogin }) { // Nhận onLogin từ App.js
           <button
             type="submit"
             className="submit-btn"
-            disabled={isAuthenticating} // Vô hiệu hóa nút khi đang đăng nhập
+            disabled={isAuthenticating}
           >
             {isAuthenticating ? 'Đang đăng nhập...' : 'Đăng nhập ngay'}
           </button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 import logo from './assets/logo.png';
 import defaultAvatar from './assets/image 1.png';
@@ -14,7 +14,6 @@ import ParkingSelectionPage from './pages/ParkingSelectionPage';
 import InvoicePage from './pages/InvoicePage';
 import AdminPage from './pages/AdminPage';
 
-// Component bảo vệ route
 function PrivateRoute({ children, isLoggedIn, role, allowedRole }) {
   console.log('PrivateRoute - isLoggedIn:', isLoggedIn, 'role:', role, 'allowedRole:', allowedRole);
   if (!isLoggedIn) {
@@ -26,7 +25,6 @@ function PrivateRoute({ children, isLoggedIn, role, allowedRole }) {
   return children;
 }
 
-// Component Popup Hỗ trợ
 function SupportPopup({ onClose }) {
   return (
     <div className="popup-overlay">
@@ -46,7 +44,6 @@ function SupportPopup({ onClose }) {
   );
 }
 
-// Component Popup Khuyến mãi
 function PromotionPopup({ onClose }) {
   return (
     <div className="popup-overlay">
@@ -66,7 +63,6 @@ function PromotionPopup({ onClose }) {
   );
 }
 
-// Component để hiển thị header
 function Header({ isLoggedIn, user, toggleDropdown, isDropdownOpen, dropdownRef, handleLogout, showSupportPopup, showPromotionPopup }) {
   const location = useLocation();
 
@@ -78,7 +74,7 @@ function Header({ isLoggedIn, user, toggleDropdown, isDropdownOpen, dropdownRef,
     <header className="header">
       <div className="header-left">
         <Link to="/">
-          <img src={logo} alt="Logo" className="logo" />
+          <img src={logo} alt="Logo" className="logo" onError={(e) => { e.target.src = defaultAvatar; }} />
         </Link>
         <span className="logo-text">BMW AutoLot</span>
       </div>
@@ -90,12 +86,12 @@ function Header({ isLoggedIn, user, toggleDropdown, isDropdownOpen, dropdownRef,
       {isLoggedIn ? (
         <div className="dropdown" ref={dropdownRef}>
           <button className="login-btn" onClick={toggleDropdown}>
-            <img src={user?.avatar || defaultAvatar} alt="Avatar" className="user-avatar" />
-            {user?.name || 'Khách Hàng'} ▼
+            <img src={user?.image || defaultAvatar} alt="Avatar" className="user-avatar" onError={(e) => { e.target.src = defaultAvatar; }} />
+            {user?.role?.toLowerCase() === 'admin' ? 'Admin' : user?.username || 'Người dùng'} ▼
           </button>
           {isDropdownOpen && (
             <div className="dropdown-menu">
-              {user?.role === 'Admin' ? (
+              {user?.role?.toLowerCase() === 'admin' ? (
                 <Link to="/admin" className="dropdown-btn admin-btn" onClick={() => toggleDropdown()}>
                   Trang Admin
                 </Link>
@@ -131,17 +127,46 @@ function App() {
   const [showSupport, setShowSupport] = useState(false);
   const [showPromotion, setShowPromotion] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [setIsAuthenticating] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
-  const syncAuthState = () => {
+  const syncAuthState = async () => {
     const storedIsLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const storedRole = localStorage.getItem('role');
-    const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('token');
 
-    if (storedIsLoggedIn && storedRole && storedUser) {
-      setIsLoggedIn(true);
-      setUser(JSON.parse(storedUser)); // Lấy thông tin người dùng từ localStorage
+    if (storedIsLoggedIn && storedToken) {
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        console.log('API /me response:', data); // Log để kiểm tra
+        if (response.ok) {
+          const userData = {
+            id: data.id,
+            username: data.username,
+            email: data.email,
+            role: data.role || 'Admin', // Đảm bảo role luôn có giá trị
+            phone: data.phone || '',
+            image: data.image || defaultAvatar,
+            isActive: data.isActive,
+            isLocked: data.isLocked,
+            created_at: data.created_at,
+          };
+          setUser(userData);
+          setIsLoggedIn(true);
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('role', userData.role);
+        } else {
+          throw new Error(data.message || 'Không thể lấy thông tin người dùng');
+        }
+      } catch (err) {
+        console.error('Error fetching user info:', err);
+        handleLogout();
+      }
     } else {
       setIsLoggedIn(false);
       setUser(null);
@@ -151,7 +176,7 @@ function App() {
 
   useEffect(() => {
     syncAuthState();
-  }, []);
+  },);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -161,19 +186,61 @@ function App() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  },);
+
+  const handleLogin = async (email, password, navigateFromLogin) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      console.log('Login API response:', data); // Log để kiểm tra
+      if (response.ok) {
+        const role = data.role || 'Người dùng'; // Đảm bảo role luôn có giá trị
+        const username = data.username;
+
+        const userData = {
+          email: email,
+          username: username,
+          role: role,
+          image: defaultAvatar,
+        };
+
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('role', role);
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('token', data.token);
+
+        setIsLoggedIn(true);
+        setUser(userData);
+
+        if (role.toLowerCase() === 'admin') {
+          navigateFromLogin('/admin', { replace: true });
+        } else {
+          navigateFromLogin('/customer', { replace: true });
+        }
+        return true;
+      } else {
+        throw new Error(data.message || 'Email hoặc mật khẩu không đúng!');
+      }
+    } catch (err) {
+      console.error('Error:', err.message);
+      return false;
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('role');
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    localStorage.removeItem('username');
     setIsLoggedIn(false);
     setUser(null);
     setIsDropdownOpen(false);
     window.dispatchEvent(new Event('storage'));
-    window.location.href = '/';
+    navigate('/', { replace: true });
   };
 
   const toggleDropdown = () => {
@@ -208,142 +275,81 @@ function App() {
     setShowPromotion(false);
   };
 
-  const loginHandler = async (email, password, navigate) => {
-    setIsAuthenticating(true);
-    console.log('Attempting login with Email:', email, 'Password:', password);
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-      console.log('API Response:', data);
-
-      if (response.ok) {
-        const rawRole = data.role;
-        const normalizedRole = rawRole.toLowerCase();
-        console.log('Raw Role from API:', rawRole);
-        console.log('Normalized Role:', normalizedRole);
-
-        const role = normalizedRole === 'admin' ? 'Admin' : 'Người dùng';
-        const username = data.username;
-
-        // Tạo đối tượng user với thông tin thực tế từ API
-        const userData = {
-          email: email,
-          name: username,
-          phone: '0123 456 789', // Có thể lấy từ API nếu server trả về
-          address: '123 Đường Láng, Đống Đa, Hà Nội', // Có thể lấy từ API nếu server trả về
-          role: role,
-          gender: 'Nam', // Có thể lấy từ API nếu server trả về
-          dob: normalizedRole === 'admin' ? '01/01/1990' : '01/01/2000', // Có thể lấy từ API nếu server trả về
-          cccd: normalizedRole === 'admin' ? '987654321012' : '123456789012', // Có thể lấy từ API nếu server trả về
-          avatar: defaultAvatar,
-        };
-
-        // Lưu thông tin vào localStorage
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('role', role);
-        localStorage.setItem('username', username);
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', data.token);
-
-        setIsLoggedIn(true);
-        setUser(userData);
-
-        // Chuyển hướng dựa trên normalizedRole
-        if (normalizedRole === 'admin') {
-          console.log('Navigating to /admin');
-          navigate('/admin', { replace: true });
-        } else {
-          console.log('Navigating to /user');
-          navigate('/customer', { replace: true });
-        }
-        return true;
-      } else {
-        throw new Error(data.message || 'Email hoặc mật khẩu không đúng!');
-      }
-    } catch (err) {
-      console.error('Error:', err);
-      return false;
-    } finally {
-      setIsAuthenticating(false);
-    }
-  };
-
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <Router>
-      <div className="app">
-        <Header
-          isLoggedIn={isLoggedIn}
-          user={user}
-          toggleDropdown={toggleDropdown}
-          isDropdownOpen={isDropdownOpen}
-          dropdownRef={dropdownRef}
-          handleLogout={handleLogout}
-          showSupportPopup={showSupportPopup}
-          showPromotionPopup={showPromotionPopup}
+    <div className="app">
+      <Header
+        isLoggedIn={isLoggedIn}
+        user={user}
+        toggleDropdown={toggleDropdown}
+        isDropdownOpen={isDropdownOpen}
+        dropdownRef={dropdownRef}
+        handleLogout={handleLogout}
+        showSupportPopup={showSupportPopup}
+        showPromotionPopup={showPromotionPopup}
+      />
+      {showSupport && <SupportPopup onClose={closeSupportPopup} />}
+      {showPromotion && <PromotionPopup onClose={closePromotionPopup} />}
+      <Routes>
+        <Route path="/" element={<HomePage isLoggedIn={isLoggedIn} />} />
+        <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/change-password" element={<ChangePasswordPage />} />
+        <Route
+          path="/customer"
+          element={
+            <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
+              <CustomerPage />
+            </PrivateRoute>
+          }
         />
-        {showSupport && <SupportPopup onClose={closeSupportPopup} />}
-        {showPromotion && <PromotionPopup onClose={closePromotionPopup} />}
-        <Routes>
-          <Route path="/" element={<HomePage isLoggedIn={isLoggedIn} />} />
-          <Route
-            path="/login"
-            element={<LoginPage onLogin={loginHandler} />}
-          />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/change-password" element={<ChangePasswordPage />} />
-          <Route
-            path="/customer"
-            element={
-              <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
-                <CustomerPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
-                <ProfilePage user={user} setUser={setUser} />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/parking-selection"
-            element={
-              <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
-                <ParkingSelectionPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/invoice"
-            element={
-              <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
-                <InvoicePage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Admin">
-                <AdminPage onLogout={handleLogout} />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
-      </div>
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
+              <ProfilePage user={user} setUser={setUser} />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/parking-selection"
+          element={
+            <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
+              <ParkingSelectionPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/invoice"
+          element={
+            <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Người dùng">
+              <InvoicePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute isLoggedIn={isLoggedIn} role={user?.role} allowedRole="Admin">
+              <AdminPage onLogout={handleLogout} />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </div>
+  );
+}
+
+function AppWrapper() {
+  return (
+    <Router>
+      <App />
     </Router>
   );
 }
 
-export default App;
+export default AppWrapper;

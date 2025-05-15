@@ -4,6 +4,25 @@ const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 require('dotenv').config();
 
+// Endpoint lấy thông tin người dùng
+router.get('/me', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ message: 'Không có token!' });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const [rows] = await pool.query('SELECT id, username, email, role, phone, image, isActive, isLocked, created_at FROM users WHERE id = ?', [decoded.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Người dùng không tồn tại!' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error in /me:', err.message);
+    res.status(401).json({ message: 'Token không hợp lệ!' });
+  }
+});
+
 // Endpoint đăng nhập
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -64,14 +83,12 @@ router.post('/save-otp', async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng cung cấp email và mã OTP!' });
     }
 
-    // Kiểm tra email tồn tại trong database
     const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (users.length === 0) {
       return res.status(400).json({ message: 'Email không tồn tại!' });
     }
 
-    // Lưu OTP và thời gian hết hạn vào database
-    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // OTP hết hạn sau 15 phút
+    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
     await pool.query(
       'UPDATE users SET reset_otp = ?, reset_otp_expiry = ? WHERE email = ?',
       [otp, otpExpiry, email]
@@ -93,7 +110,6 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin!' });
     }
 
-    // Kiểm tra email và OTP trong database
     const [users] = await pool.query(
       'SELECT * FROM users WHERE email = ? AND reset_otp = ? AND reset_otp_expiry > NOW()',
       [email, otp]
@@ -103,7 +119,6 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ message: 'Mã xác nhận không hợp lệ hoặc đã hết hạn!' });
     }
 
-    // Cập nhật mật khẩu mới và xóa OTP
     await pool.query(
       'UPDATE users SET password = ?, reset_otp = NULL, reset_otp_expiry = NULL WHERE email = ?',
       [newPassword, email]

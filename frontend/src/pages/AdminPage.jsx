@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import parkingAImage from "../assets/imagebai1.jpg"
+import parkingAImage from "../assets/imagebai1.jpg";
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -16,10 +16,10 @@ import './AdminPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const AdminPage = ({ onLogout }) => {
+const AdminPage = ({ onLogout, user }) => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('Người dùng'); // Sử dụng displayName thay vì username
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [showAddAccountForm, setShowAddAccountForm] = useState(false);
   const [showEditAccountForm, setShowEditAccountForm] = useState(false);
@@ -100,7 +100,7 @@ const AdminPage = ({ onLogout }) => {
       { id: 'B5', isOccupied: false },
     ],
     car: [],
-    truck: []
+    truck: [],
   });
   const [feedbacks] = useState([
     {
@@ -208,19 +208,20 @@ const AdminPage = ({ onLogout }) => {
   };
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     const role = localStorage.getItem('role');
-    const storedUsername = localStorage.getItem('username');
+    const storedUser = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
 
     if (!isLoggedIn) {
       navigate('/login');
     } else if (role !== 'Admin') {
       navigate('/');
     } else {
-      setUsername(storedUsername || 'Người dùng');
+      // Cập nhật displayName dựa trên role và username từ storedUser
+      setDisplayName(storedUser?.role === 'Admin' ? 'Admin' : storedUser?.username || 'Người dùng');
     }
 
-    const socket = new WebSocket('ws://192.168.1.241:81'); 
+    const socket = new WebSocket('ws://192.168.1.241:81');
 
     socket.onopen = () => {
       console.log('Connected to ESP32 WebSocket');
@@ -540,7 +541,7 @@ const AdminPage = ({ onLogout }) => {
           <span className="icon">🔍</span>
           <span className="icon">🔔</span>
           <div className="user-profile" onClick={toggleDropdown}>
-            <span className="user-name">{username}</span>
+            <span className="user-name">{displayName}</span>
             <span className="dropdown-arrow">▼</span>
             {isDropdownOpen && (
               <div className="dropdown-menu">
@@ -591,6 +592,7 @@ const AdminPage = ({ onLogout }) => {
           </div>
         </div>
 
+        {/* Các thành phần khác giữ nguyên như trong file gốc */}
         {showAccountForm && (
           <div className="account-form">
             <div className="account-form-header">
