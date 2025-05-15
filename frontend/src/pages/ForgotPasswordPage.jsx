@@ -7,42 +7,73 @@ function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
+    setIsSubmitting(true);
 
+    // Kiểm tra email rỗng
     if (!email) {
       setError('Vui lòng nhập email!');
-      setSuccess('');
+      setIsSubmitting(false);
       return;
     }
 
+    // Kiểm tra định dạng email cơ bản
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Email không hợp lệ!');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Tạo mã OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    localStorage.setItem('resetPasswordOTP', otp);
-    localStorage.setItem('resetPasswordEmail', email);
 
-    const templateParams = {
-      to_email: email,
-      otp: otp,
-    };
+    // Gọi API để lưu OTP vào database
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/save-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      });
 
-    emailjs
-      .send('service_lwg22j8', 'template_0w64mqm', templateParams, 'm_sqSMomHJTVzrxlP')
-      .then(
-        () => {
-          setError('');
-          setSuccess('Yêu cầu đã được gửi! Vui lòng kiểm tra email của bạn để lấy mã xác nhận.');
-          setTimeout(() => {
-            navigate('/change-password');
-          }, 2000);
-        },
-        (err) => {
-          setError('Có lỗi khi gửi email. Vui lòng thử lại!');
-          setSuccess('');
-          console.log(err);
-        }
-      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Không thể lưu mã OTP. Vui lòng thử lại!');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Lưu email vào localStorage để sử dụng sau
+      localStorage.setItem('resetPasswordEmail', email);
+
+      // Gửi email qua EmailJS
+      const templateParams = {
+        to_email: email,
+        otp: otp,
+      };
+
+      await emailjs.send('service_lwg22j8', 'template_0w64mqm', templateParams, 'm_sqSMomHJTVzrxlP');
+
+      setError('');
+      setSuccess('Yêu cầu đã được gửi! Vui lòng kiểm tra email của bạn để lấy mã xác nhận.');
+      setTimeout(() => {
+        navigate('/change-password');
+      }, 2000);
+    } catch (err) {
+      console.error('Error during OTP saving or email sending:', err);
+      setError('Có lỗi xảy ra. Vui lòng thử lại!');
+      setSuccess('');
+      localStorage.removeItem('resetPasswordEmail');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -66,11 +97,12 @@ function ForgotPasswordPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={isSubmitting}
             />
           </div>
 
-          <button type="submit" className="submit-btn">
-            Gửi yêu cầu
+          <button type="submit" className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? 'Đang gửi...' : 'Gửi yêu cầu'}
           </button>
         </form>
 

@@ -16,12 +16,12 @@ import AdminPage from './pages/AdminPage';
 
 // Component bảo vệ route
 function PrivateRoute({ children, isLoggedIn, role, allowedRole }) {
-  console.log('isLoggedIn in PrivateRoute:', isLoggedIn, 'role:', role, 'allowedRole:', allowedRole);
+  console.log('PrivateRoute - isLoggedIn:', isLoggedIn, 'role:', role, 'allowedRole:', allowedRole);
   if (!isLoggedIn) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
   if (allowedRole && role !== allowedRole) {
-    return <Navigate to="/" />;
+    return <Navigate to="/" replace />;
   }
   return children;
 }
@@ -130,33 +130,26 @@ function App() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
   const [showPromotion, setShowPromotion] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [setIsAuthenticating] = useState(false);
   const dropdownRef = useRef(null);
 
   const syncAuthState = () => {
     const storedIsLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     const storedRole = localStorage.getItem('role');
-    if (storedIsLoggedIn && storedRole) {
+    const storedUser = localStorage.getItem('user');
+
+    if (storedIsLoggedIn && storedRole && storedUser) {
       setIsLoggedIn(true);
-      setUser({
-        email: storedRole === 'Admin' ? 'admin@example.com' : 'test@example.com',
-        name: storedRole === 'Admin' ? 'Admin User' : 'Nguyễn Hoàng',
-        phone: '0123 456 789',
-        address: '123 Đường Láng, Đống Đa, Hà Nội',
-        role: storedRole,
-        gender: 'Nam',
-        dob: storedRole === 'Admin' ? '01/01/1990' : '01/01/2000',
-        cccd: storedRole === 'Admin' ? '987654321012' : '123456789012',
-        avatar: defaultAvatar,
-      });
+      setUser(JSON.parse(storedUser)); // Lấy thông tin người dùng từ localStorage
     } else {
       setIsLoggedIn(false);
       setUser(null);
     }
+    setIsLoading(false);
   };
 
   useEffect(() => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('role');
     syncAuthState();
   }, []);
 
@@ -170,53 +163,17 @@ function App() {
     };
   }, []);
 
-  const handleLogin = (email, password) => {
-    if (email === 'admin@example.com' && password === '123456') {
-      console.log('Admin login successful, setting isLoggedIn to true');
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('role', 'Admin');
-      setIsLoggedIn(true);
-      setUser({
-        email: email,
-        name: 'Admin User',
-        phone: '0123 456 789',
-        address: '123 Đường Láng, Đống Đa, Hà Nội',
-        role: 'Admin',
-        gender: 'Nam',
-        dob: '01/01/1990',
-        cccd: '987654321012',
-        avatar: defaultAvatar,
-      });
-      return true;
-    } else if (email === 'test@example.com' && password === '123456') {
-      console.log('User login successful, setting isLoggedIn to true');
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('role', 'Người dùng');
-      setIsLoggedIn(true);
-      setUser({
-        email: email,
-        name: 'Nguyễn Hoàng',
-        phone: '0123 456 789',
-        address: '123 Đường Láng, Đống Đa, Hà Nội',
-        role: 'Người dùng',
-        gender: 'Nam',
-        dob: '01/01/2000',
-        cccd: '123456789012',
-        avatar: defaultAvatar,
-      });
-      return true;
-    }
-    console.log('Login failed');
-    return false;
-  };
-
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('role');
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
     setIsLoggedIn(false);
     setUser(null);
     setIsDropdownOpen(false);
     window.dispatchEvent(new Event('storage'));
+    window.location.href = '/';
   };
 
   const toggleDropdown = () => {
@@ -251,6 +208,74 @@ function App() {
     setShowPromotion(false);
   };
 
+  const loginHandler = async (email, password, navigate) => {
+    setIsAuthenticating(true);
+    console.log('Attempting login with Email:', email, 'Password:', password);
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      console.log('API Response:', data);
+
+      if (response.ok) {
+        const rawRole = data.role;
+        const normalizedRole = rawRole.toLowerCase();
+        console.log('Raw Role from API:', rawRole);
+        console.log('Normalized Role:', normalizedRole);
+
+        const role = normalizedRole === 'admin' ? 'Admin' : 'Người dùng';
+        const username = data.username;
+
+        // Tạo đối tượng user với thông tin thực tế từ API
+        const userData = {
+          email: email,
+          name: username,
+          phone: '0123 456 789', // Có thể lấy từ API nếu server trả về
+          address: '123 Đường Láng, Đống Đa, Hà Nội', // Có thể lấy từ API nếu server trả về
+          role: role,
+          gender: 'Nam', // Có thể lấy từ API nếu server trả về
+          dob: normalizedRole === 'admin' ? '01/01/1990' : '01/01/2000', // Có thể lấy từ API nếu server trả về
+          cccd: normalizedRole === 'admin' ? '987654321012' : '123456789012', // Có thể lấy từ API nếu server trả về
+          avatar: defaultAvatar,
+        };
+
+        // Lưu thông tin vào localStorage
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('role', role);
+        localStorage.setItem('username', username);
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('token', data.token);
+
+        setIsLoggedIn(true);
+        setUser(userData);
+
+        // Chuyển hướng dựa trên normalizedRole
+        if (normalizedRole === 'admin') {
+          console.log('Navigating to /admin');
+          navigate('/admin', { replace: true });
+        } else {
+          console.log('Navigating to /user');
+          navigate('/customer', { replace: true });
+        }
+        return true;
+      } else {
+        throw new Error(data.message || 'Email hoặc mật khẩu không đúng!');
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      return false;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <Router>
       <div className="app">
@@ -268,7 +293,10 @@ function App() {
         {showPromotion && <PromotionPopup onClose={closePromotionPopup} />}
         <Routes>
           <Route path="/" element={<HomePage isLoggedIn={isLoggedIn} />} />
-          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+          <Route
+            path="/login"
+            element={<LoginPage onLogin={loginHandler} />}
+          />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/change-password" element={<ChangePasswordPage />} />

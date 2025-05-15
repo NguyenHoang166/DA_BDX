@@ -8,69 +8,74 @@ function ChangePasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  // Kiểm tra mã OTP khi component được mount
   useEffect(() => {
-    const storedOtp = localStorage.getItem('resetPasswordOTP');
-    if (!storedOtp) {
-      setError('Không tìm thấy mã xác nhận! Vui lòng gửi yêu cầu đặt lại mật khẩu.');
+    const storedEmail = localStorage.getItem('resetPasswordEmail');
+    if (!storedEmail) {
+      setError('Không tìm thấy email! Vui lòng gửi yêu cầu đặt lại mật khẩu.');
       setTimeout(() => {
         navigate('/forgot-password');
       }, 2000);
     }
   }, [navigate]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
+    setIsSubmitting(true);
 
-    // Lấy mã OTP và email từ localStorage
-    const storedOtp = localStorage.getItem('resetPasswordOTP');
+    const email = localStorage.getItem('resetPasswordEmail');
+    if (!email) {
+      setError('Không tìm thấy email! Vui lòng gửi yêu cầu đặt lại mật khẩu.');
+      setIsSubmitting(false);
+      return;
+    }
 
-    // Kiểm tra mã OTP
     if (!otp) {
       setError('Vui lòng nhập mã xác nhận!');
-      setSuccess('');
+      setIsSubmitting(false);
       return;
     }
 
-    if (!storedOtp) {
-      setError('Không tìm thấy mã xác nhận! Vui lòng gửi yêu cầu đặt lại mật khẩu.');
-      setSuccess('');
-      return;
-    }
-
-    if (otp !== storedOtp) {
-      setError('Mã xác nhận không đúng!');
-      setSuccess('');
-      return;
-    }
-
-    // Kiểm tra mật khẩu
     if (!newPassword || !confirmPassword) {
       setError('Vui lòng nhập đầy đủ mật khẩu!');
-      setSuccess('');
+      setIsSubmitting(false);
       return;
     }
 
     if (newPassword !== confirmPassword) {
       setError('Mật khẩu xác nhận không khớp!');
-      setSuccess('');
+      setIsSubmitting(false);
       return;
     }
 
-    // Giả lập thay đổi mật khẩu thành công
-    setError('');
-    setSuccess('Mật khẩu đã được thay đổi thành công!');
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp, newPassword }),
+      });
 
-    // Xóa dữ liệu trong localStorage
-    localStorage.removeItem('resetPasswordOTP');
-    localStorage.removeItem('resetPasswordEmail');
+      const data = await response.json();
 
-    // Chuyển hướng về trang đăng nhập sau 2 giây
-    setTimeout(() => {
-      navigate('/login');
-    }, 2000);
+      if (response.ok) {
+        setSuccess(data.message || 'Mật khẩu đã được thay đổi thành công!');
+        localStorage.removeItem('resetPasswordEmail');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } else {
+        setError(data.message || 'Có lỗi xảy ra. Vui lòng thử lại!');
+      }
+    } catch (err) {
+      console.error('Error during password reset:', err);
+      setError('Lỗi kết nối đến server!');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -91,6 +96,7 @@ function ChangePasswordPage() {
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               required
+              disabled={isSubmitting}
             />
           </div>
 
@@ -105,6 +111,7 @@ function ChangePasswordPage() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
+              disabled={isSubmitting}
             />
           </div>
 
@@ -119,11 +126,12 @@ function ChangePasswordPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
+              disabled={isSubmitting}
             />
           </div>
 
-          <button type="submit" className="submit-btn">
-            Thay đổi mật khẩu
+          <button type="submit" className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? 'Đang xử lý...' : 'Thay đổi mật khẩu'}
           </button>
         </form>
 

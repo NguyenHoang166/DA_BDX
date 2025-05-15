@@ -56,11 +56,10 @@ export default function ParkingSelectionPage() {
 
   // State cho dữ liệu từ ESP32
   const [espSlots, setEspSlots] = useState([]);
-  const [espEmptySlots, setEspEmptySlots] = useState(0);
 
   useEffect(() => {
     // Kết nối WebSocket với ESP32
-    const socket = new WebSocket("ws://192.168.1.152:81");
+    const socket = new WebSocket("ws://192.168.1.241:81");
 
     socket.onopen = () => {
       console.log("Connected to ESP32 WebSocket");
@@ -77,7 +76,6 @@ export default function ParkingSelectionPage() {
         }
 
         setEspSlots(parsedData.slots);
-        setEspEmptySlots(parsedData.emptySlots || 0);
         setEspParkingLot((prev) => ({
           ...prev,
           availableSlots: parsedData.emptySlots || 0,
@@ -292,7 +290,7 @@ export default function ParkingSelectionPage() {
       return;
     }
 
-    const defaultQrCode = "http://192.168.1.152/enter";
+    const defaultQrCode = "http://192.168.1.241/enter";
     const newOrder = {
       id: orders.length + 1,
       customerInfo: { ...customerInfo },

@@ -36,37 +36,43 @@ const AdminPage = ({ onLogout }) => {
   const [users, setUsers] = useState([
     {
       id: 1,
-      image: 'https://via.placeholder.com/50',
-      name: 'Nguyễn Văn A',
+      username: 'nguyenvana',
       email: 'nguyenvana@example.com',
-      phone: '0123456789',
       password: 'password123',
-      isActive: true,
-      isLocked: false,
-      role: 'Khách Hàng',
+      role: 'Ngườidùng',
+      created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      reset_opt_exp: null,
+      image: 'https://via.placeholder.com/50',
+      phone: '0123456789',
+      isActive: 1,
+      isLocked: 0,
     },
     {
       id: 2,
-      image: 'https://via.placeholder.com/50',
-      name: 'Trần Thị B',
+      username: 'tranthib',
       email: 'tranthib@example.com',
-      phone: '0987654321',
       password: 'password456',
-      isActive: false,
-      isLocked: true,
       role: 'Admin',
+      created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      reset_opt_exp: null,
+      image: 'https://via.placeholder.com/50',
+      phone: '0987654321',
+      isActive: 0,
+      isLocked: 1,
     },
   ]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newUser, setNewUser] = useState({
-    image: 'https://via.placeholder.com/50',
-    name: '',
+    username: '',
     email: '',
-    phone: '',
     password: '',
-    isActive: true,
-    isLocked: false,
-    role: 'Khách Hàng',
+    role: 'Ngườidùng',
+    created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+    reset_opt_exp: null,
+    image: 'https://via.placeholder.com/50',
+    phone: '',
+    isActive: 1,
+    isLocked: 0,
   });
   const [prices, setPrices] = useState({
     car: { basePrice: 5000, monthlyPrice: 3600000 },
@@ -78,7 +84,7 @@ const AdminPage = ({ onLogout }) => {
     motorcycle: { oneMonth: 3, threeMonths: 5, sixMonths: 7, oneYear: 9 },
     truck: { oneMonth: 7, threeMonths: 9, sixMonths: 15, oneYear: 18 },
   });
-  const [parkingLots, setParkingLots] = useState([]); // Xóa dữ liệu ảo
+  const [parkingLots, setParkingLots] = useState([]);
   const [newParkingLot, setNewParkingLot] = useState({
     name: '',
     image: 'https://via.placeholder.com/150',
@@ -92,46 +98,9 @@ const AdminPage = ({ onLogout }) => {
       { id: 'B3', isOccupied: false },
       { id: 'B4', isOccupied: true },
       { id: 'B5', isOccupied: false },
-      { id: 'B6', isOccupied: true },
-      { id: 'B7', isOccupied: false },
-      { id: 'B8', isOccupied: true },
-      { id: 'B9', isOccupied: false },
-      { id: 'B10', isOccupied: true },
     ],
-    car: [
-      { id: 'B11', isOccupied: false },
-      { id: 'B12', isOccupied: true },
-      { id: 'B13', isOccupied: false },
-      { id: 'B14', isOccupied: true },
-      { id: 'B15', isOccupied: false },
-      { id: 'B16', isOccupied: true },
-      { id: 'B17', isOccupied: false },
-      { id: 'B18', isOccupied: true },
-      { id: 'B19', isOccupied: false },
-      { id: 'B20', isOccupied: true },
-      { id: 'B21', isOccupied: false },
-      { id: 'B22', isOccupied: true },
-      { id: 'B23', isOccupied: false },
-      { id: 'B24', isOccupied: true },
-      { id: 'B25', isOccupied: false },
-      { id: 'B26', isOccupied: true },
-      { id: 'B27', isOccupied: false },
-      { id: 'B28', isOccupied: true },
-      { id: 'B29', isOccupied: false },
-      { id: 'B30', isOccupied: true },
-    ],
-    truck: [
-      { id: 'B31', isOccupied: false },
-      { id: 'B32', isOccupied: true },
-      { id: 'B33', isOccupied: false },
-      { id: 'B34', isOccupied: true },
-      { id: 'B35', isOccupied: false },
-      { id: 'B36', isOccupied: true },
-      { id: 'B37', isOccupied: false },
-      { id: 'B38', isOccupied: true },
-      { id: 'B39', isOccupied: false },
-      { id: 'B40', isOccupied: true },
-    ],
+    car: [],
+    truck: []
   });
   const [feedbacks] = useState([
     {
@@ -188,9 +157,8 @@ const AdminPage = ({ onLogout }) => {
     ],
   });
 
-  // State cho bãi đỗ từ ESP32
   const [espParkingLot, setEspParkingLot] = useState({
-    id:1,
+    id: 1,
     name: 'Bãi đỗ ESP32',
     image: parkingAImage,
     availableSlots: 0,
@@ -252,8 +220,7 @@ const AdminPage = ({ onLogout }) => {
       setUsername(storedUsername || 'Người dùng');
     }
 
-    // Kết nối WebSocket với ESP32
-    const socket = new WebSocket('ws://192.168.1.152:81'); // Thay 192.168.1.xxx bằng IP của ESP32
+    const socket = new WebSocket('ws://192.168.1.241:81'); 
 
     socket.onopen = () => {
       console.log('Connected to ESP32 WebSocket');
@@ -303,14 +270,16 @@ const AdminPage = ({ onLogout }) => {
   const handleCloseAddAccountForm = () => {
     setShowAddAccountForm(false);
     setNewUser({
-      image: 'https://via.placeholder.com/50',
-      name: '',
+      username: '',
       email: '',
-      phone: '',
       password: '',
-      isActive: true,
-      isLocked: false,
-      role: 'Khách Hàng',
+      role: 'Ngườidùng',
+      created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      reset_opt_exp: null,
+      image: 'https://via.placeholder.com/50',
+      phone: '',
+      isActive: 1,
+      isLocked: 0,
     });
   };
 
@@ -326,14 +295,16 @@ const AdminPage = ({ onLogout }) => {
     e.preventDefault();
     const newUserData = {
       id: users.length + 1,
-      image: newUser.image,
-      name: newUser.name,
+      username: newUser.username,
       email: newUser.email,
-      phone: newUser.phone,
       password: newUser.password,
+      role: newUser.role,
+      created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      reset_opt_exp: newUser.reset_opt_exp,
+      image: newUser.image,
+      phone: newUser.phone,
       isActive: newUser.isActive,
       isLocked: newUser.isLocked,
-      role: newUser.role,
     };
     setUsers([...users, newUserData]);
     handleCloseAddAccountForm();
@@ -359,7 +330,7 @@ const AdminPage = ({ onLogout }) => {
     setUsers(
       users.map((user) =>
         user.id === id
-          ? { ...user, isLocked: !user.isLocked, isActive: user.isLocked }
+          ? { ...user, isLocked: !user.isLocked, isActive: user.isLocked ? 0 : 1 }
           : user
       )
     );
@@ -375,7 +346,7 @@ const AdminPage = ({ onLogout }) => {
 
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -442,12 +413,8 @@ const AdminPage = ({ onLogout }) => {
           { id: 'B4', isOccupied: true },
           { id: 'B5', isOccupied: false },
         ],
-        car: [
-        
-        ],
-        truck: [
-        
-        ],
+        car: [],
+        truck: [],
       });
     }
   };
@@ -567,7 +534,6 @@ const AdminPage = ({ onLogout }) => {
 
   return (
     <div className="admin-page">
-      {/* Header */}
       <div className="header">
         <div className="logo">ADMIN</div>
         <div className="header-icons">
@@ -587,7 +553,6 @@ const AdminPage = ({ onLogout }) => {
         </div>
       </div>
 
-      {/* Nội dung chính */}
       <div
         className="main-content"
         style={{
@@ -597,7 +562,6 @@ const AdminPage = ({ onLogout }) => {
           backgroundRepeat: 'no-repeat',
         }}
       >
-        {/* Khu vực chức năng */}
         <div className="function-box">
           <h3>Chức năng</h3>
           <div className="function-item">
@@ -627,7 +591,6 @@ const AdminPage = ({ onLogout }) => {
           </div>
         </div>
 
-        {/* Form Quản Lý Tài Khoản */}
         {showAccountForm && (
           <div className="account-form">
             <div className="account-form-header">
@@ -653,13 +616,15 @@ const AdminPage = ({ onLogout }) => {
                 <thead>
                   <tr>
                     <th>Số Thứ Tự</th>
-                    <th>Hình Ảnh</th>
-                    <th>Tên Khách Hàng</th>
-                    <th>Loại Tài Khoản</th>
+                    <th>Tên Đăng Nhập</th>
                     <th>Email</th>
-                    <th>Số Điện Thoại</th>
                     <th>Mật Khẩu</th>
+                    <th>Quyền</th>
+                    <th>Hình Ảnh</th>
+                    <th>Số Điện Thoại</th>
+                    <th>Ngày Tạo</th>
                     <th>Hoạt Động</th>
+                    <th>Khóa</th>
                     <th>Chức Năng</th>
                   </tr>
                 </thead>
@@ -667,15 +632,17 @@ const AdminPage = ({ onLogout }) => {
                   {filteredUsers.map((user) => (
                     <tr key={user.id}>
                       <td>{user.id}</td>
-                      <td>
-                        <img src={user.image} alt={user.name} className="user-image" />
-                      </td>
-                      <td>{user.name}</td>
-                      <td>{user.role}</td>
+                      <td>{user.username}</td>
                       <td>{user.email}</td>
-                      <td>{user.phone}</td>
                       <td>{user.password}</td>
+                      <td>{user.role}</td>
+                      <td>
+                        <img src={user.image} alt={user.username} className="user-image" />
+                      </td>
+                      <td>{user.phone}</td>
+                      <td>{user.created_at}</td>
                       <td>{user.isActive ? 'Có' : 'Không'}</td>
+                      <td>{user.isLocked ? 'Có' : 'Không'}</td>
                       <td>
                         <button
                           className="action-icon edit"
@@ -707,12 +674,48 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Form Thêm Tài Khoản */}
         {showAddAccountForm && (
           <div className="add-account-modal">
             <div className="add-account-form">
               <h3>Thêm Tài Khoản Mới</h3>
               <form onSubmit={handleAddAccount}>
+                <div className="form-group">
+                  <label>Tên Đăng Nhập:</label>
+                  <input
+                    type="text"
+                    value={newUser.username}
+                    onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email:</label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Mật Khẩu:</label>
+                  <input
+                    type="password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Quyền:</label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  >
+                    <option value="Ngườidùng">Ngườidùng</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                </div>
                 <div className="form-group">
                   <label>Hình Ảnh:</label>
                   <input
@@ -727,73 +730,31 @@ const AdminPage = ({ onLogout }) => {
                   )}
                 </div>
                 <div className="form-group">
-                  <label>Tên Khách Hàng:</label>
-                  <input
-                    type="text"
-                    value={newUser.name}
-                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Email:</label>
-                  <input
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
                   <label>Số Điện Thoại:</label>
                   <input
                     type="text"
                     value={newUser.phone}
                     onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                    required
                   />
-                </div>
-                <div className="form-group">
-                  <label>Mật Khẩu:</label>
-                  <input
-                    type="password"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Loại Tài Khoản:</label>
-                  <select
-                    value={newUser.role}
-                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  >
-                    <option value="Khách Hàng">Khách Hàng</option>
-                    <option value="Admin">Admin</option>
-                  </select>
                 </div>
                 <div className="form-group">
                   <label>Hoạt Động:</label>
                   <select
                     value={newUser.isActive}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, isActive: e.target.value === 'true' })
-                    }
+                    onChange={(e) => setNewUser({ ...newUser, isActive: parseInt(e.target.value) })}
                   >
-                    <option value={true}>Có</option>
-                    <option value={false}>Không</option>
+                    <option value={1}>Có</option>
+                    <option value={0}>Không</option>
                   </select>
                 </div>
                 <div className="form-group">
                   <label>Khóa Tài Khoản:</label>
                   <select
                     value={newUser.isLocked}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, isLocked: e.target.value === 'true' })
-                    }
+                    onChange={(e) => setNewUser({ ...newUser, isLocked: parseInt(e.target.value) })}
                   >
-                    <option value={false}>Không</option>
-                    <option value={true}>Có</option>
+                    <option value={0}>Không</option>
+                    <option value={1}>Có</option>
                   </select>
                 </div>
                 <div className="form-actions">
@@ -813,12 +774,48 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Form Chỉnh Sửa Tài Khoản */}
         {showEditAccountForm && editUser && (
           <div className="edit-account-modal">
             <div className="edit-account-form">
               <h3>Chỉnh Sửa Tài Khoản</h3>
               <form onSubmit={handleEditAccount}>
+                <div className="form-group">
+                  <label>Tên Đăng Nhập:</label>
+                  <input
+                    type="text"
+                    value={editUser.username}
+                    onChange={(e) => setEditUser({ ...editUser, username: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email:</label>
+                  <input
+                    type="email"
+                    value={editUser.email}
+                    onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Mật Khẩu:</label>
+                  <input
+                    type="password"
+                    value={editUser.password}
+                    onChange={(e) => setEditUser({ ...editUser, password: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Quyền:</label>
+                  <select
+                    value={editUser.role}
+                    onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
+                  >
+                    <option value="Ngườidùng">Ngườidùng</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                </div>
                 <div className="form-group">
                   <label>Hình Ảnh:</label>
                   <input
@@ -833,73 +830,31 @@ const AdminPage = ({ onLogout }) => {
                   )}
                 </div>
                 <div className="form-group">
-                  <label>Tên Khách Hàng:</label>
-                  <input
-                    type="text"
-                    value={editUser.name}
-                    onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Email:</label>
-                  <input
-                    type="email"
-                    value={editUser.email}
-                    onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
                   <label>Số Điện Thoại:</label>
                   <input
                     type="text"
                     value={editUser.phone}
                     onChange={(e) => setEditUser({ ...editUser, phone: e.target.value })}
-                    required
                   />
-                </div>
-                <div className="form-group">
-                  <label>Mật Khẩu:</label>
-                  <input
-                    type="password"
-                    value={editUser.password}
-                    onChange={(e) => setEditUser({ ...editUser, password: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Loại Tài Khoản:</label>
-                  <select
-                    value={editUser.role}
-                    onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
-                  >
-                    <option value="Khách Hàng">Khách Hàng</option>
-                    <option value="Admin">Admin</option>
-                  </select>
                 </div>
                 <div className="form-group">
                   <label>Hoạt Động:</label>
                   <select
                     value={editUser.isActive}
-                    onChange={(e) =>
-                      setEditUser({ ...editUser, isActive: e.target.value === 'true' })
-                    }
+                    onChange={(e) => setEditUser({ ...editUser, isActive: parseInt(e.target.value) })}
                   >
-                    <option value={true}>Có</option>
-                    <option value={false}>Không</option>
+                    <option value={1}>Có</option>
+                    <option value={0}>Không</option>
                   </select>
                 </div>
                 <div className="form-group">
                   <label>Khóa Tài Khoản:</label>
                   <select
                     value={editUser.isLocked}
-                    onChange={(e) =>
-                      setEditUser({ ...editUser, isLocked: e.target.value === 'true' })
-                    }
+                    onChange={(e) => setEditUser({ ...editUser, isLocked: parseInt(e.target.value) })}
                   >
-                    <option value={false}>Không</option>
-                    <option value={true}>Có</option>
+                    <option value={0}>Không</option>
+                    <option value={1}>Có</option>
                   </select>
                 </div>
                 <div className="form-actions">
@@ -919,7 +874,6 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Form Quản Lý Giá */}
         {showPriceForm && (
           <div className="price-form-modal">
             <div className="price-form">
@@ -1188,7 +1142,6 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Form Quản Lý Bãi */}
         {showParkingListForm && (
           <div className="parking-list-form">
             <div className="parking-list-header">
@@ -1238,7 +1191,6 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Form Thêm Bãi Đỗ */}
         {showAddParkingLotForm && (
           <div className="add-account-modal">
             <div className="add-account-form">
@@ -1309,7 +1261,6 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Form Cập Nhật Bãi Đỗ */}
         {showEditParkingLotForm && editParkingLot && (
           <div className="add-account-modal">
             <div className="add-account-form">
@@ -1385,7 +1336,6 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Form Quản Lý Bãi Đỗ */}
         {showParkingForm && (
           <div className="parking-form">
             <div className="parking-form-header">
@@ -1464,7 +1414,6 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Form Đánh Giá và Phản Hồi */}
         {showFeedbackForm && (
           <div className="feedback-form">
             <div className="feedback-form-header">
@@ -1509,7 +1458,6 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Popup Thống Kê */}
         {showStatisticsPopup && (
           <div className="admin-page-statistics-popup-overlay">
             <div className="admin-page-statistics-popup">

@@ -2,34 +2,29 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 
-function LoginPage({ onLogin }) {
+function LoginPage({ onLogin }) { // Nhận onLogin từ App.js
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false); // Thêm trạng thái để theo dõi
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Email:', email, 'Password:', password);
-    const success = onLogin(email, password);
-    console.log('Login success:', success);
-    if (success) {
-      const role = email === 'admin@example.com' ? 'Admin' : 'Người dùng';
-      // Lấy username từ email (phần trước ký tự @)
-      const username = email.split('@')[0]; // Ví dụ: admin@example.com -> admin
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('role', role);
-      localStorage.setItem('username', username); // Lưu username vào localStorage
-      console.log('Role after login:', role);
-      console.log('Username saved:', username);
+    setError(''); // Xóa lỗi cũ
+    setIsAuthenticating(true); // Bắt đầu quá trình đăng nhập
 
-      if (role === 'Admin') {
-        navigate('/admin', { replace: true });
-      } else {
-        navigate('/customer', { replace: true });
+    console.log('Attempting login with Email:', email, 'Password:', password);
+    try {
+      const success = await onLogin(email, password, navigate); // Sử dụng onLogin từ props
+      if (!success) {
+        setError('Email hoặc mật khẩu không đúng!');
       }
-    } else {
-      setError('Email hoặc mật khẩu không đúng!');
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Lỗi kết nối đến server!');
+    } finally {
+      setIsAuthenticating(false); // Kết thúc quá trình đăng nhập
     }
   };
 
@@ -50,6 +45,7 @@ function LoginPage({ onLogin }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={isAuthenticating} // Vô hiệu hóa khi đang đăng nhập
             />
           </div>
 
@@ -64,6 +60,7 @@ function LoginPage({ onLogin }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={isAuthenticating} // Vô hiệu hóa khi đang đăng nhập
             />
           </div>
 
@@ -73,16 +70,20 @@ function LoginPage({ onLogin }) {
             </Link>
           </div>
 
-          <button type="submit" className="submit-btn">
-            Đăng nhập ngay
+          <button
+            type="submit"
+            className="submit-btn"
+            disabled={isAuthenticating} // Vô hiệu hóa nút khi đang đăng nhập
+          >
+            {isAuthenticating ? 'Đang đăng nhập...' : 'Đăng nhập ngay'}
           </button>
         </form>
 
         <div className="social-login">
-          <button className="facebook-btn">
+          <button className="facebook-btn" disabled={isAuthenticating}>
             <span className="social-icon">f</span> Sign in with Facebook
           </button>
-          <button className="google-btn">
+          <button className="google-btn" disabled={isAuthenticating}>
             <span className="social-icon">G</span> Sign in with Google
           </button>
         </div>
