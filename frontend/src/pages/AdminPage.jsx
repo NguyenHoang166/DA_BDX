@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import parkingAImage from "../assets/imagebai1.jpg";
 import { Bar } from 'react-chartjs-2';
 import {
@@ -19,7 +20,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const AdminPage = ({ onLogout, user }) => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [displayName, setDisplayName] = useState('Người dùng'); // Sử dụng displayName thay vì username
+  const [displayName, setDisplayName] = useState('Người dùng');
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [showAddAccountForm, setShowAddAccountForm] = useState(false);
   const [showEditAccountForm, setShowEditAccountForm] = useState(false);
@@ -33,34 +34,8 @@ const AdminPage = ({ onLogout, user }) => {
   const [showAddParkingLotForm, setShowAddParkingLotForm] = useState(false);
   const [showEditParkingLotForm, setShowEditParkingLotForm] = useState(false);
   const [editParkingLot, setEditParkingLot] = useState(null);
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      username: 'nguyenvana',
-      email: 'nguyenvana@example.com',
-      password: 'password123',
-      role: 'Ngườidùng',
-      created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      reset_opt_exp: null,
-      image: 'https://via.placeholder.com/50',
-      phone: '0123456789',
-      isActive: 1,
-      isLocked: 0,
-    },
-    {
-      id: 2,
-      username: 'tranthib',
-      email: 'tranthib@example.com',
-      password: 'password456',
-      role: 'Admin',
-      created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      reset_opt_exp: null,
-      image: 'https://via.placeholder.com/50',
-      phone: '0987654321',
-      isActive: 0,
-      isLocked: 1,
-    },
-  ]);
+
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newUser, setNewUser] = useState({
     username: '',
@@ -68,12 +43,13 @@ const AdminPage = ({ onLogout, user }) => {
     password: '',
     role: 'Ngườidùng',
     created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-    reset_opt_exp: null,
     image: 'https://via.placeholder.com/50',
+    imagePreview: 'https://via.placeholder.com/50',
     phone: '',
     isActive: 1,
     isLocked: 0,
   });
+
   const [prices, setPrices] = useState({
     car: { basePrice: 5000, monthlyPrice: 3600000 },
     motorcycle: { basePrice: 2000, monthlyPrice: 1440000 },
@@ -103,38 +79,10 @@ const AdminPage = ({ onLogout, user }) => {
     truck: [],
   });
   const [feedbacks] = useState([
-    {
-      id: 1,
-      customerName: 'Hồng vip pro',
-      phone: '0349837392',
-      feedback: 'Dịch vụ tốt',
-      rating: 5,
-      date: '12/03/2025',
-    },
-    {
-      id: 2,
-      customerName: 'Hồng vip pro',
-      phone: '0349837392',
-      feedback: 'Giá cả cao, hay giảm giá',
-      rating: 4,
-      date: '17/03/2025',
-    },
-    {
-      id: 3,
-      customerName: 'Hồng vip pro',
-      phone: '0349837392',
-      feedback: 'Giá cả cao, hay giảm giá',
-      rating: 4,
-      date: '20/03/2025',
-    },
-    {
-      id: 4,
-      customerName: 'Hồng vip pro',
-      phone: '0349837392',
-      feedback: 'Dịch vụ tốt',
-      rating: 5,
-      date: '27/03/2025',
-    },
+    { id: 1, customerName: 'Hồng vip pro', phone: '0349837392', feedback: 'Dịch vụ tốt', rating: 5, date: '12/03/2025' },
+    { id: 2, customerName: 'Hồng vip pro', phone: '0349837392', feedback: 'Giá cả cao, hay giảm giá', rating: 4, date: '17/03/2025' },
+    { id: 3, customerName: 'Hồng vip pro', phone: '0349837392', feedback: 'Giá cả cao, hay giảm giá', rating: 4, date: '20/03/2025' },
+    { id: 4, customerName: 'Hồng vip pro', phone: '0349837392', feedback: 'Dịch vụ tốt', rating: 5, date: '27/03/2025' },
   ]);
   const [feedbackSearchTerm, setFeedbackSearchTerm] = useState('');
   const [statistics] = useState({
@@ -170,43 +118,40 @@ const AdminPage = ({ onLogout, user }) => {
   const chartData = {
     labels: statistics.dailyData.map((item) => item.date),
     datasets: [
-      {
-        label: 'Doanh thu',
-        data: statistics.dailyData.map((item) => item.revenue),
-        backgroundColor: '#007bff',
-      },
-      {
-        label: 'Tiền vốn',
-        data: statistics.dailyData.map((item) => item.capital),
-        backgroundColor: '#ff4d4d',
-      },
+      { label: 'Doanh thu', data: statistics.dailyData.map((item) => item.revenue), backgroundColor: '#007bff' },
+      { label: 'Tiền vốn', data: statistics.dailyData.map((item) => item.capital), backgroundColor: '#ff4d4d' },
     ],
   };
 
   const chartOptions = {
     responsive: true,
     plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: 'DOANH THU VÀ TIỀN VỐN THEO THỜI GIAN',
-        font: {
-          size: 18,
-        },
-      },
+      legend: { position: 'top' },
+      title: { display: true, text: 'DOANH THU VÀ TIỀN VỐN THEO THỜI GIAN', font: { size: 18 } },
     },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: (value) => `${value / 1000000}M`,
-        },
-      },
-    },
+    scales: { y: { beginAtZero: true, ticks: { callback: (value) => `${value / 1000000}M` } } },
   };
 
+  const API_BASE_URL = '/api';
+
+  // Hàm lấy danh sách người dùng từ API
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Không tìm thấy token trong localStorage');
+      }
+      const response = await axios.get(`${API_BASE_URL}/user`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách người dùng:', error.response ? error.response.data : error.message);
+      alert('Không thể tải danh sách người dùng: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  // useEffect để khởi tạo dữ liệu
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
     const role = localStorage.getItem('role');
@@ -214,60 +159,49 @@ const AdminPage = ({ onLogout, user }) => {
 
     if (!isLoggedIn) {
       navigate('/login');
-    } else if (role !== 'Admin') {
-      navigate('/');
-    } else {
-      // Cập nhật displayName dựa trên role và username từ storedUser
-      setDisplayName(storedUser?.role === 'Admin' ? 'Admin' : storedUser?.username || 'Người dùng');
+      return;
     }
 
-    const socket = new WebSocket('ws://192.168.1.241:81');
+    if (role !== 'Admin') {
+      navigate('/');
+      return;
+    }
 
-    socket.onopen = () => {
-      console.log('Connected to ESP32 WebSocket');
-    };
+    setDisplayName(storedUser?.role === 'Admin' ? 'Admin' : storedUser?.username || 'Người dùng');
+    fetchUsers(); // Gọi API để lấy danh sách người dùng
 
+    const socket = new WebSocket('ws://192.168.1.13:81');
+    socket.onopen = () => console.log('Connected to ESP32 WebSocket');
     socket.onmessage = (event) => {
-      const parsedData = JSON.parse(event.data);
-      setEspSlots(parsedData.slots);
-      setEspEmptySlots(parsedData.emptySlots);
-      setEspParkingLot((prev) => ({ ...prev, availableSlots: parsedData.emptySlots }));
+      try {
+        const parsedData = JSON.parse(event.data);
+        setEspSlots(parsedData.slots || []);
+        setEspEmptySlots(parsedData.emptySlots || 0);
+        setEspParkingLot((prev) => ({ ...prev, availableSlots: parsedData.emptySlots || 0 }));
+      } catch (error) {
+        console.error('Lỗi khi parse dữ liệu WebSocket:', error);
+      }
     };
-
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    socket.onclose = () => {
-      console.log('Disconnected from ESP32 WebSocket');
-    };
-
-    return () => {
-      socket.close();
-    };
+    socket.onerror = (error) => console.error('WebSocket error:', error);
+    socket.onclose = () => console.log('Disconnected from ESP32 WebSocket');
+    return () => socket.close();
   }, [navigate]);
 
   const handleLogout = () => {
     onLogout();
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
+  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
-  const handleShowAccountForm = () => {
-    setShowAccountForm(true);
-  };
+  const handleShowAccountForm = () => setShowAccountForm(true);
+  const handleCloseAccountForm = () => setShowAccountForm(false);
 
-  const handleCloseAccountForm = () => {
-    setShowAccountForm(false);
-  };
-
-  const handleShowAddAccountForm = () => {
-    setShowAddAccountForm(true);
-  };
-
+  const handleShowAddAccountForm = () => setShowAddAccountForm(true);
   const handleCloseAddAccountForm = () => {
     setShowAddAccountForm(false);
     setNewUser({
@@ -276,8 +210,8 @@ const AdminPage = ({ onLogout, user }) => {
       password: '',
       role: 'Ngườidùng',
       created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      reset_opt_exp: null,
       image: 'https://via.placeholder.com/50',
+      imagePreview: 'https://via.placeholder.com/50',
       phone: '',
       isActive: 1,
       isLocked: 0,
@@ -288,31 +222,51 @@ const AdminPage = ({ onLogout, user }) => {
     const file = e.target.files[0];
     if (file) {
       const imageUrl = URL.createObjectURL(file);
-      setFunction({ ...obj, image: imageUrl });
+      setFunction({ ...obj, image: file, imagePreview: imageUrl });
     }
   };
 
-  const handleAddAccount = (e) => {
+  // Hàm thêm tài khoản mới
+  const handleAddAccount = async (e) => {
     e.preventDefault();
-    const newUserData = {
-      id: users.length + 1,
-      username: newUser.username,
-      email: newUser.email,
-      password: newUser.password,
-      role: newUser.role,
-      created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      reset_opt_exp: newUser.reset_opt_exp,
-      image: newUser.image,
-      phone: newUser.phone,
-      isActive: newUser.isActive,
-      isLocked: newUser.isLocked,
-    };
-    setUsers([...users, newUserData]);
-    handleCloseAddAccountForm();
+    try {
+      const formData = new FormData();
+      formData.append('username', newUser.username);
+      formData.append('email', newUser.email);
+      formData.append('password', newUser.password);
+      formData.append('role', newUser.role);
+      formData.append('created_at', newUser.created_at);
+      if (typeof newUser.image !== 'string') {
+        formData.append('image', newUser.image);
+      } else {
+        formData.append('image', '');
+      }
+      formData.append('phone', newUser.phone || '');
+      formData.append('isActive', newUser.isActive);
+      formData.append('isLocked', newUser.isLocked);
+
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/user`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      fetchUsers();
+      handleCloseAddAccountForm();
+      alert('Thêm tài khoản thành công!');
+    } catch (error) {
+      console.error('Lỗi khi thêm tài khoản:', error.response ? error.response.data : error.message);
+      alert('Lỗi khi thêm tài khoản: ' + (error.response?.data?.message || error.message));
+    }
   };
 
+  // Hàm hiển thị form chỉnh sửa tài khoản
   const handleShowEditAccountForm = (user) => {
-    setEditUser(user);
+    setEditUser({
+      ...user,
+      imagePreview: user.image,
+    });
     setShowEditAccountForm(true);
   };
 
@@ -321,29 +275,90 @@ const AdminPage = ({ onLogout, user }) => {
     setEditUser(null);
   };
 
-  const handleEditAccount = (e) => {
+  // Hàm cập nhật tài khoản
+  const handleEditAccount = async (e) => {
     e.preventDefault();
-    setUsers(users.map((user) => (user.id === editUser.id ? { ...editUser } : user)));
-    handleCloseEditAccountForm();
+    try {
+      const formData = new FormData();
+      formData.append('username', editUser.username);
+      formData.append('email', editUser.email);
+      formData.append('password', editUser.password);
+      formData.append('role', editUser.role);
+      formData.append('created_at', editUser.created_at);
+      if (typeof editUser.image !== 'string') {
+        formData.append('image', editUser.image);
+      } else {
+        formData.append('image', editUser.image);
+      }
+      formData.append('phone', editUser.phone || '');
+      formData.append('isActive', editUser.isActive);
+      formData.append('isLocked', editUser.isLocked);
+
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_BASE_URL}/user/${editUser.id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      fetchUsers();
+      handleCloseEditAccountForm();
+      alert('Cập nhật tài khoản thành công!');
+    } catch (error) {
+      console.error('Lỗi khi cập nhật tài khoản:', error.response ? error.response.data : error.message);
+      alert('Lỗi khi cập nhật tài khoản: ' + (error.response?.data?.message || error.message));
+    }
   };
 
-  const handleLockAccount = (id) => {
-    setUsers(
-      users.map((user) =>
-        user.id === id
-          ? { ...user, isLocked: !user.isLocked, isActive: user.isLocked ? 0 : 1 }
-          : user
-      )
-    );
+  // Hàm khóa/mở tài khoản
+  const handleLockAccount = async (id) => {
+    try {
+      const user = users.find((u) => u.id === id);
+      const updatedUser = { ...user, isLocked: !user.isLocked, isActive: user.isLocked ? 1 : 0 };
+      const formData = new FormData();
+      formData.append('username', updatedUser.username);
+      formData.append('email', updatedUser.email);
+      formData.append('password', updatedUser.password || '');
+      formData.append('role', updatedUser.role);
+      formData.append('created_at', updatedUser.created_at);
+      formData.append('image', updatedUser.image);
+      formData.append('phone', updatedUser.phone || '');
+      formData.append('isActive', updatedUser.isActive);
+      formData.append('isLocked', updatedUser.isLocked);
+
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_BASE_URL}/user/${id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      fetchUsers();
+      alert(user.isLocked ? 'Mở khóa tài khoản thành công!' : 'Khóa tài khoản thành công!');
+    } catch (error) {
+      console.error('Lỗi khi khóa/mở tài khoản:', error.response ? error.response.data : error.message);
+      alert('Lỗi khi khóa/mở tài khoản: ' + (error.response?.data?.message || error.message));
+    }
   };
 
-  const handleDeleteAccount = (id) => {
-    setUsers(users.filter((user) => user.id !== id));
+  // Hàm xóa tài khoản
+  const handleDeleteAccount = async (id) => {
+    if (window.confirm('Bạn có chắc muốn xóa tài khoản này?')) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`${API_BASE_URL}/user/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        fetchUsers();
+        alert('Xóa tài khoản thành công!');
+      } catch (error) {
+        console.error('Lỗi khi xóa tài khoản:', error.response ? error.response.data : error.message);
+        alert('Lỗi khi xóa tài khoản: ' + (error.response?.data?.message || error.message));
+      }
+    }
   };
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
+  const handleSearch = (e) => setSearchTerm(e.target.value);
 
   const filteredUsers = users.filter(
     (user) =>
@@ -351,22 +366,14 @@ const AdminPage = ({ onLogout, user }) => {
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleShowPriceForm = () => {
-    setShowPriceForm(true);
-  };
-
-  const handleClosePriceForm = () => {
-    setShowPriceForm(false);
-  };
+  const handleShowPriceForm = () => setShowPriceForm(true);
+  const handleClosePriceForm = () => setShowPriceForm(false);
 
   const handlePriceChange = (e, vehicleType) => {
     const { name, value } = e.target;
     setPrices((prevPrices) => ({
       ...prevPrices,
-      [vehicleType]: {
-        ...prevPrices[vehicleType],
-        [name]: parseInt(value) || 0,
-      },
+      [vehicleType]: { ...prevPrices[vehicleType], [name]: parseInt(value) || 0 },
     }));
   };
 
@@ -374,10 +381,7 @@ const AdminPage = ({ onLogout, user }) => {
     const { value } = e.target;
     setDiscounts((prevDiscounts) => ({
       ...prevDiscounts,
-      [vehicleType]: {
-        ...prevDiscounts[vehicleType],
-        [duration]: parseInt(value) || 0,
-      },
+      [vehicleType]: { ...prevDiscounts[vehicleType], [duration]: parseInt(value) || 0 },
     }));
   };
 
@@ -388,13 +392,8 @@ const AdminPage = ({ onLogout, user }) => {
     handleClosePriceForm();
   };
 
-  const handleShowParkingListForm = () => {
-    setShowParkingListForm(true);
-  };
-
-  const handleCloseParkingListForm = () => {
-    setShowParkingListForm(false);
-  };
+  const handleShowParkingListForm = () => setShowParkingListForm(true);
+  const handleCloseParkingListForm = () => setShowParkingListForm(false);
 
   const handleViewParkingLot = (lotId) => {
     setShowParkingListForm(false);
@@ -420,9 +419,7 @@ const AdminPage = ({ onLogout, user }) => {
     }
   };
 
-  const handleCloseParkingForm = () => {
-    setShowParkingForm(false);
-  };
+  const handleCloseParkingForm = () => setShowParkingForm(false);
 
   const handleToggleSlot = (vehicleType, slotId) => {
     setParkingSlots((prevSlots) => ({
@@ -433,31 +430,21 @@ const AdminPage = ({ onLogout, user }) => {
     }));
   };
 
-  const handleShowStatisticsPopup = () => {
-    setShowStatisticsPopup(true);
-  };
-
+  const handleShowStatisticsPopup = () => setShowStatisticsPopup(true);
   const handleCloseStatisticsPopup = () => {
     setShowStatisticsPopup(false);
     setShowChart(false);
   };
 
-  const handleShowChart = () => {
-    setShowChart(true);
-  };
+  const handleShowChart = () => setShowChart(true);
 
-  const handleShowFeedbackForm = () => {
-    setShowFeedbackForm(true);
-  };
-
+  const handleShowFeedbackForm = () => setShowFeedbackForm(true);
   const handleCloseFeedbackForm = () => {
     setShowFeedbackForm(false);
     setFeedbackSearchTerm('');
   };
 
-  const handleFeedbackSearch = (e) => {
-    setFeedbackSearchTerm(e.target.value);
-  };
+  const handleFeedbackSearch = (e) => setFeedbackSearchTerm(e.target.value);
 
   const filteredFeedbacks = feedbacks.filter(
     (feedback) =>
@@ -466,18 +453,10 @@ const AdminPage = ({ onLogout, user }) => {
       feedback.feedback.toLowerCase().includes(feedbackSearchTerm.toLowerCase())
   );
 
-  const handleShowAddParkingLotForm = () => {
-    setShowAddParkingLotForm(true);
-  };
-
+  const handleShowAddParkingLotForm = () => setShowAddParkingLotForm(true);
   const handleCloseAddParkingLotForm = () => {
     setShowAddParkingLotForm(false);
-    setNewParkingLot({
-      name: '',
-      image: 'https://via.placeholder.com/150',
-      availableSlots: 0,
-      price: 0,
-    });
+    setNewParkingLot({ name: '', image: 'https://via.placeholder.com/150', availableSlots: 0, price: 0 });
   };
 
   const handleAddParkingLot = (e) => {
@@ -592,7 +571,6 @@ const AdminPage = ({ onLogout, user }) => {
           </div>
         </div>
 
-        {/* Các thành phần khác giữ nguyên như trong file gốc */}
         {showAccountForm && (
           <div className="account-form">
             <div className="account-form-header">
@@ -631,45 +609,49 @@ const AdminPage = ({ onLogout, user }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id}>
-                      <td>{user.id}</td>
-                      <td>{user.username}</td>
-                      <td>{user.email}</td>
-                      <td>{user.password}</td>
-                      <td>{user.role}</td>
-                      <td>
-                        <img src={user.image} alt={user.username} className="user-image" />
-                      </td>
-                      <td>{user.phone}</td>
-                      <td>{user.created_at}</td>
-                      <td>{user.isActive ? 'Có' : 'Không'}</td>
-                      <td>{user.isLocked ? 'Có' : 'Không'}</td>
-                      <td>
-                        <button
-                          className="action-icon edit"
-                          onClick={() => handleShowEditAccountForm(user)}
-                          title="Sửa"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          className="action-icon lock"
-                          onClick={() => handleLockAccount(user.id)}
-                          title={user.isLocked ? 'Mở Khóa' : 'Khóa'}
-                        >
-                          {user.isLocked ? '🔓' : '🔒'}
-                        </button>
-                        <button
-                          className="action-icon delete"
-                          onClick={() => handleDeleteAccount(user.id)}
-                          title="Xóa"
-                        >
-                          🗑️
-                        </button>
-                      </td>
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
+                      <tr key={user.id}>
+                        <td>{user.id}</td>
+                        <td>{user.username}</td>
+                        <td>{user.email}</td>
+                        <td>{user.password}</td>
+                        <td>{user.role}</td>
+                        <td><img src={user.image} alt={user.username} className="user-image" /></td>
+                        <td>{user.phone || 'N/A'}</td>
+                        <td>{user.created_at}</td>
+                        <td>{user.isActive ? 'Có' : 'Không'}</td>
+                        <td>{user.isLocked ? 'Có' : 'Không'}</td>
+                        <td>
+                          <button
+                            className="action-icon edit"
+                            onClick={() => handleShowEditAccountForm(user)}
+                            title="Sửa"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            className="action-icon lock"
+                            onClick={() => handleLockAccount(user.id)}
+                            title={user.isLocked ? 'Mở Khóa' : 'Khóa'}
+                          >
+                            {user.isLocked ? '🔓' : '🔒'}
+                          </button>
+                          <button
+                            className="action-icon delete"
+                            onClick={() => handleDeleteAccount(user.id)}
+                            title="Xóa"
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="11">Không có dữ liệu</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -725,9 +707,9 @@ const AdminPage = ({ onLogout, user }) => {
                     accept="image/*"
                     onChange={(e) => handleImageChange(e, setNewUser, newUser)}
                   />
-                  {newUser.image && (
+                  {newUser.imagePreview && (
                     <div className="image-preview">
-                      <img src={newUser.image} alt="Preview" />
+                      <img src={newUser.imagePreview} alt="Preview" />
                     </div>
                   )}
                 </div>
@@ -825,9 +807,9 @@ const AdminPage = ({ onLogout, user }) => {
                     accept="image/*"
                     onChange={(e) => handleImageChange(e, setEditUser, editUser)}
                   />
-                  {editUser.image && (
+                  {editUser.imagePreview && (
                     <div className="image-preview">
-                      <img src={editUser.image} alt="Preview" />
+                      <img src={editUser.imagePreview} alt="Preview" />
                     </div>
                   )}
                 </div>
@@ -1166,16 +1148,10 @@ const AdminPage = ({ onLogout, user }) => {
                     <p>Số chỗ trống: {lot.availableSlots}</p>
                     <p>{lot.price.toLocaleString()} VNĐ/giờ</p>
                     <div className="parking-lot-actions">
-                      <button
-                        className="view-button"
-                        onClick={() => handleViewParkingLot(lot.id)}
-                      >
+                      <button className="view-button" onClick={() => handleViewParkingLot(lot.id)}>
                         Xem ngay
                       </button>
-                      <button
-                        className="edit-button"
-                        onClick={() => handleShowEditParkingLotForm(lot)}
-                      >
+                      <button className="edit-button" onClick={() => handleShowEditParkingLotForm(lot)}>
                         Cập Nhật
                       </button>
                       <button
@@ -1216,9 +1192,7 @@ const AdminPage = ({ onLogout, user }) => {
                   <input
                     type="text"
                     value={newParkingLot.name}
-                    onChange={(e) =>
-                      setNewParkingLot({ ...newParkingLot, name: e.target.value })
-                    }
+                    onChange={(e) => setNewParkingLot({ ...newParkingLot, name: e.target.value })}
                     required
                   />
                 </div>
@@ -1227,9 +1201,7 @@ const AdminPage = ({ onLogout, user }) => {
                   <input
                     type="number"
                     value={newParkingLot.availableSlots}
-                    onChange={(e) =>
-                      setNewParkingLot({ ...newParkingLot, availableSlots: e.target.value })
-                    }
+                    onChange={(e) => setNewParkingLot({ ...newParkingLot, availableSlots: e.target.value })}
                     min="0"
                     required
                   />
@@ -1239,9 +1211,7 @@ const AdminPage = ({ onLogout, user }) => {
                   <input
                     type="number"
                     value={newParkingLot.price}
-                    onChange={(e) =>
-                      setNewParkingLot({ ...newParkingLot, price: e.target.value })
-                    }
+                    onChange={(e) => setNewParkingLot({ ...newParkingLot, price: e.target.value })}
                     min="0"
                     required
                   />
@@ -1286,9 +1256,7 @@ const AdminPage = ({ onLogout, user }) => {
                   <input
                     type="text"
                     value={editParkingLot.name}
-                    onChange={(e) =>
-                      setEditParkingLot({ ...editParkingLot, name: e.target.value })
-                    }
+                    onChange={(e) => setEditParkingLot({ ...editParkingLot, name: e.target.value })}
                     required
                   />
                 </div>
@@ -1296,14 +1264,8 @@ const AdminPage = ({ onLogout, user }) => {
                   <label>Số Chỗ Trống:</label>
                   <input
                     type="number"
-                    value={
-                      editParkingLot.id === espParkingLot.id
-                        ? espEmptySlots
-                        : editParkingLot.availableSlots
-                    }
-                    onChange={(e) =>
-                      setEditParkingLot({ ...editParkingLot, availableSlots: e.target.value })
-                    }
+                    value={editParkingLot.id === espParkingLot.id ? espEmptySlots : editParkingLot.availableSlots}
+                    onChange={(e) => setEditParkingLot({ ...editParkingLot, availableSlots: e.target.value })}
                     min="0"
                     disabled={editParkingLot.id === espParkingLot.id}
                     required
@@ -1314,9 +1276,7 @@ const AdminPage = ({ onLogout, user }) => {
                   <input
                     type="number"
                     value={editParkingLot.price}
-                    onChange={(e) =>
-                      setEditParkingLot({ ...editParkingLot, price: e.target.value })
-                    }
+                    onChange={(e) => setEditParkingLot({ ...editParkingLot, price: e.target.value })}
                     min="0"
                     required
                   />
@@ -1357,10 +1317,7 @@ const AdminPage = ({ onLogout, user }) => {
               </h4>
               <div className="vehicle-section">
                 <div className="vehicle-label">
-                  <span role="img" aria-label="Xe máy">
-                    🏍️
-                  </span>{' '}
-                  Xe máy
+                  <span role="img" aria-label="Xe máy">🏍️</span> Xe máy
                 </div>
                 <div className="slots">
                   {parkingSlots.motorcycle.map((slot) => (
@@ -1376,10 +1333,7 @@ const AdminPage = ({ onLogout, user }) => {
               </div>
               <div className="vehicle-section">
                 <div className="vehicle-label">
-                  <span role="img" aria-label="Ô tô">
-                    🚗
-                  </span>{' '}
-                  Ô tô
+                  <span role="img" aria-label="Ô tô">🚗</span> Ô tô
                 </div>
                 <div className="slots">
                   {parkingSlots.car.map((slot) => (
@@ -1395,10 +1349,7 @@ const AdminPage = ({ onLogout, user }) => {
               </div>
               <div className="vehicle-section">
                 <div className="vehicle-label">
-                  <span role="img" aria-label="Xe tải">
-                    🚚
-                  </span>{' '}
-                  Xe tải
+                  <span role="img" aria-label="Xe tải">🚚</span> Xe tải
                 </div>
                 <div className="slots">
                   {parkingSlots.truck.map((slot) => (
@@ -1467,23 +1418,12 @@ const AdminPage = ({ onLogout, user }) => {
                 <h3>Thống Kê</h3>
                 <div className="admin-page-form-actions">
                   <label>Ngày bắt đầu:</label>
-                  <input
-                    type="date"
-                    defaultValue="2025-03-19"
-                    className="admin-page-date-input"
-                  />
+                  <input type="date" defaultValue="2025-03-19" className="admin-page-date-input" />
                   <label>Ngày kết thúc:</label>
-                  <input
-                    type="date"
-                    defaultValue="2025-03-19"
-                    className="admin-page-date-input"
-                  />
+                  <input type="date" defaultValue="2025-03-19" className="admin-page-date-input" />
                   <button className="admin-page-filter-button">Tìm kiếm</button>
                   <button className="admin-page-export-button">Xuất Excel</button>
-                  <button
-                    className="admin-page-close-button"
-                    onClick={handleCloseStatisticsPopup}
-                  >
+                  <button className="admin-page-close-button" onClick={handleCloseStatisticsPopup}>
                     Đóng
                   </button>
                 </div>
