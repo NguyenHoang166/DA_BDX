@@ -1048,13 +1048,15 @@
 
 .table-container {
   width: 100%;
+  overflow-x: auto; /* Giúp cuộn ngang nếu bảng quá rộng */
 }
 
 .payment-table {
-  width: 100%;
+  width: 150%; /* Tăng chiều rộng bảng thêm 50% */
+  margin-left: 0; /* Căn bảng từ trái */
   border-collapse: collapse;
-  background-color: rgba(255, 255, 255, 0.4); /* 40% opacity with white background */
-  backdrop-filter: blur(2px); /* Optional subtle blur effect */
+  background-color: rgba(255, 255, 255, 0.4); /* 40% opacity với nền trắng */
+  backdrop-filter: blur(2px); /* Hiệu ứng mờ nhẹ */
 }
 
 .payment-table th,
@@ -1065,17 +1067,17 @@
 }
 
 .payment-table th {
-  background-color: rgba(0, 123, 255, 0.6); /* 60% opacity for header */
+  background-color: rgba(0, 123, 255, 0.6); /* 60% opacity cho header */
   color: white;
   font-weight: bold;
 }
 
 .payment-table tr:nth-child(even) {
-  background-color: rgba(248, 249, 250, 0.4); /* 40% opacity for even rows */
+  background-color: rgba(248, 249, 250, 0.4); /* 40% opacity cho hàng chẵn */
 }
 
 .payment-table tr:hover {
-  background-color: rgba(233, 236, 239, 0.6); /* 60% opacity on hover */
+  background-color: rgba(233, 236, 239, 0.6); /* 60% opacity khi hover */
 }
 
 .payment-table td {

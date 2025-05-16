@@ -105,7 +105,9 @@ const AdminPage = ({ onLogout }) => {
       vehicleType: 'Xe máy',
       time: '2025-05-16 09:00:00',
       amount: 10000,
-      paymentMethod: 'Tiền mặt'
+      paymentMethod: 'Tiền mặt',
+      email: 'nguyenvana@example.com',
+      phone: '0901234567'
     },
     {
       transactionCode: 'TXN002',
@@ -113,7 +115,9 @@ const AdminPage = ({ onLogout }) => {
       vehicleType: 'Ô tô',
       time: '2025-05-16 10:30:00',
       amount: 50000,
-      paymentMethod: 'Chuyển khoản'
+      paymentMethod: 'Chuyển khoản',
+      email: 'tranthib@example.com',
+      phone: '0912345678'
     },
     {
       transactionCode: 'TXN003',
@@ -121,7 +125,9 @@ const AdminPage = ({ onLogout }) => {
       vehicleType: 'Xe tải',
       time: '2025-05-16 14:15:00',
       amount: 80000,
-      paymentMethod: 'Thẻ tín dụng'
+      paymentMethod: 'Thẻ tín dụng',
+      email: 'levanc@example.com',
+      phone: '0923456789'
     }
   ]);
   const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
@@ -934,6 +940,8 @@ const AdminPage = ({ onLogout }) => {
                       <th>Thời Gian</th>
                       <th>Số Tiền</th>
                       <th>Phương Thức</th>
+                      <th>Email</th>
+                      <th>Số ĐT</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -945,6 +953,8 @@ const AdminPage = ({ onLogout }) => {
                         <td>{transaction.time || 'N/A'}</td>
                         <td>{(transaction.amount || 0).toLocaleString()} đ</td>
                         <td>{transaction.paymentMethod || 'N/A'}</td>
+                        <td>{transaction.email || 'N/A'}</td>
+                        <td>{transaction.phone || 'N/A'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1205,11 +1215,11 @@ const AdminPage = ({ onLogout }) => {
               </div>
               <div className="vehicle-section">
                 <div className="vehicle-label">
-                    <span role="img" aria-label="Xe tải">
-                      🚚
-                    </span>{' '}
-                    Xe tải
-                  </div>
+                  <span role="img" aria-label="Xe tải">
+                    🚚
+                  </span>{' '}
+                  Xe tải
+                </div>
                 <div className="slots">
                   {parkingSlots.truck.map((slot) => (
                     <button
