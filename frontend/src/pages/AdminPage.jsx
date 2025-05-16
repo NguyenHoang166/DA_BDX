@@ -15,8 +15,9 @@ import './AdminPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const API_BASE_URL = '';
+const API_BASE_URL = 'http://localhost:5000'; // Thay bằng URL backend thực tế
 
+// Hàm gọi API với xử lý token và lỗi
 const fetchWithAuth = async (url, options = {}, navigate) => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -32,6 +33,12 @@ const fetchWithAuth = async (url, options = {}, navigate) => {
 
   console.log(`Gọi API: ${url} với phương thức ${options.method || 'GET'}`);
   const response = await fetch(url, { ...options, headers });
+
+  // Xử lý status 204 (No Content)
+  if (response.status === 204) {
+    return null; // Không có body để parse
+  }
+
   if (!response.ok) {
     let errorMessage = `Gọi API thất bại: ${response.status}`;
     if (response.status === 401) {
@@ -43,7 +50,7 @@ const fetchWithAuth = async (url, options = {}, navigate) => {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const error = await response.json();
-        errorMessage = error.message || errorMessage;
+        errorMessage = error.error || error.message || errorMessage;
       } else {
         const text = await response.text();
         console.error('Phản hồi không phải JSON:', text.slice(0, 100));
@@ -54,6 +61,7 @@ const fetchWithAuth = async (url, options = {}, navigate) => {
     }
     throw new Error(errorMessage);
   }
+
   return response.json();
 };
 
@@ -81,7 +89,7 @@ const AdminPage = ({ onLogout }) => {
     username: '',
     email: '',
     password: '',
-    role: 'Ngườidung',
+    role: 'Người dùng',
     created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
     reset_opt_exp: null,
     image: 'https://via.placeholder.com/50',
@@ -128,7 +136,7 @@ const AdminPage = ({ onLogout }) => {
     name: 'Bãi đỗ ESP32',
     image: 'https://via.placeholder.com/150',
     availableSlots: 0,
-    price: 0,
+    price: 5000,
   });
   const [espSlots, setEspSlots] = useState([]);
   const [espEmptySlots, setEspEmptySlots] = useState(0);
@@ -167,21 +175,6 @@ const AdminPage = ({ onLogout }) => {
     },
   };
 
-  // Hàm đóng tất cả các form
-  const closeAllForms = () => {
-    setShowAccountForm(false);
-    setShowAddAccountForm(false);
-    setShowEditAccountForm(false);
-    setShowPriceForm(false);
-    setShowParkingListForm(false);
-    setShowParkingForm(false);
-    setShowStatisticsPopup(false);
-    setShowFeedbackForm(false);
-    setShowAddParkingLotForm(false);
-    setShowEditParkingLotForm(false);
-    setShowChart(false);
-  };
-
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const role = localStorage.getItem('role');
@@ -216,7 +209,6 @@ const AdminPage = ({ onLogout }) => {
       setFeedbackError(null);
       try {
         const data = await fetchWithAuth(`${API_BASE_URL}/api/feedback`, {}, navigate);
-        console.log('Dữ liệu phản hồi từ API:', data);
         const updatedData = Array.isArray(data)
           ? data.map((feedback, index) => ({
               ...feedback,
@@ -264,25 +256,17 @@ const AdminPage = ({ onLogout }) => {
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
-  const handleShowAccountForm = () => {
-    closeAllForms();
-    setShowAccountForm(true);
-  };
-
+  const handleShowAccountForm = () => setShowAccountForm(true);
   const handleCloseAccountForm = () => setShowAccountForm(false);
 
-  const handleShowAddAccountForm = () => {
-    closeAllForms();
-    setShowAddAccountForm(true);
-  };
-
+  const handleShowAddAccountForm = () => setShowAddAccountForm(true);
   const handleCloseAddAccountForm = () => {
     setShowAddAccountForm(false);
     setNewUser({
       username: '',
       email: '',
       password: '',
-      role: 'Ngườidung',
+      role: 'Người dùng',
       created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
       reset_opt_exp: null,
       image: 'https://via.placeholder.com/50',
@@ -300,24 +284,51 @@ const AdminPage = ({ onLogout }) => {
     }
   };
 
+  // Xử lý thêm tài khoản
   const handleAddAccount = async (e) => {
     e.preventDefault();
     try {
-      const userData = { ...newUser };
+      // Chuẩn bị dữ liệu
+      const userData = {
+        ...newUser,
+        created_at: newUser.created_at || new Date().toISOString().slice(0, 19).replace('T', ' '),
+        phone: newUser.phone || null,
+        image: newUser.image || 'https://via.placeholder.com/50',
+        isActive: newUser.isActive ?? 1,
+        isLocked: newUser.isLocked ?? 0,
+      };
+
+      // Kiểm tra trùng username (tạm thời ở frontend)
+      if (users.some((u) => u.username === userData.username)) {
+        alert('Tên đăng nhập đã tồn tại!');
+        return;
+      }
+
+      // Gửi yêu cầu thêm tài khoản
       const data = await fetchWithAuth(`${API_BASE_URL}/api/user`, {
         method: 'POST',
         body: JSON.stringify(userData),
       }, navigate);
+
+      // Cập nhật danh sách người dùng
       setUsers([...users, data]);
       handleCloseAddAccountForm();
       alert('Thêm tài khoản thành công!');
     } catch (err) {
-      alert(`Lỗi khi thêm tài khoản: ${err.message}`);
+      console.error('Lỗi khi thêm tài khoản:', err);
+      if (err.message.includes('409')) {
+        alert('Tên đăng nhập đã tồn tại!');
+      } else if (err.message.includes('400')) {
+        alert('Dữ liệu không hợp lệ. Vui lòng kiểm tra lại!');
+      } else if (err.message.includes('500')) {
+        alert('Lỗi máy chủ khi thêm tài khoản!');
+      } else {
+        alert(`Lỗi khi thêm tài khoản: ${err.message}`);
+      }
     }
   };
 
   const handleShowEditAccountForm = (user) => {
-    closeAllForms();
     setEditUser(user);
     setShowEditAccountForm(true);
   };
@@ -331,11 +342,11 @@ const AdminPage = ({ onLogout }) => {
     e.preventDefault();
     try {
       const updatedUser = await fetchWithAuth(
-        `${API_BASE_URL}/api/user/${editUser.id}`,
+        `${API_BASE_URL}/api/user/${encodeURIComponent(editUser.username)}`,
         { method: 'PUT', body: JSON.stringify(editUser) },
         navigate
       );
-      setUsers(users.map((user) => (user.id === editUser.id ? updatedUser : user)));
+      setUsers(users.map((user) => (user.username === editUser.username ? updatedUser : user)));
       handleCloseEditAccountForm();
       alert('Cập nhật tài khoản thành công!');
     } catch (err) {
@@ -343,17 +354,23 @@ const AdminPage = ({ onLogout }) => {
     }
   };
 
-  const handleLockAccount = async (id) => {
+  const handleLockAccount = async (username) => {
     try {
-      const user = users.find((u) => u.id === id);
+      const user = users.find((u) => u.username === username);
       if (!user) throw new Error('Không tìm thấy người dùng!');
-      const updatedUser = await fetchWithAuth(`${API_BASE_URL}/api/user/khoa/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ isLocked: !user.isLocked }),
-      }, navigate);
+      const updatedUser = await fetchWithAuth(
+        `${API_BASE_URL}/api/user/khoa/${encodeURIComponent(username)}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ isLocked: !user.isLocked }),
+        },
+        navigate
+      );
       setUsers(
         users.map((u) =>
-          u.id === id ? { ...u, isLocked: updatedUser.isLocked, isActive: updatedUser.isLocked ? 0 : 1 } : u
+          u.username === username
+            ? { ...u, isLocked: updatedUser.isLocked, isActive: updatedUser.isLocked ? 0 : 1 }
+            : u
         )
       );
       alert(`${updatedUser.isLocked ? 'Khóa' : 'Mở khóa'} tài khoản thành công!`);
@@ -363,14 +380,36 @@ const AdminPage = ({ onLogout }) => {
     }
   };
 
-  const handleDeleteAccount = async (id) => {
+  // Xử lý xóa tài khoản
+  const handleDeleteAccount = async (username) => {
     if (window.confirm('Bạn có chắc muốn xóa tài khoản này?')) {
       try {
-        await fetchWithAuth(`${API_BASE_URL}/api/user/${id}`, { method: 'DELETE' }, navigate);
-        setUsers(users.filter((user) => user.id !== id));
+        // Kiểm tra tài khoản có tồn tại không
+        const userExists = users.find((user) => user.username === username);
+        if (!userExists) {
+          alert('Tài khoản không tồn tại!');
+          return;
+        }
+
+        // Gửi yêu cầu xóa
+        await fetchWithAuth(
+          `${API_BASE_URL}/api/user/${encodeURIComponent(username)}`,
+          { method: 'DELETE' },
+          navigate
+        );
+
+        // Cập nhật danh sách người dùng
+        setUsers(users.filter((user) => user.username !== username));
         alert('Xóa tài khoản thành công!');
       } catch (err) {
-        alert(`Lỗi khi xóa tài khoản: ${err.message}`);
+        console.error('Lỗi khi xóa tài khoản:', err);
+        if (err.message.includes('404')) {
+          alert('Tài khoản không tồn tại để xóa!');
+        } else if (err.message.includes('500')) {
+          alert('Lỗi máy chủ khi xóa tài khoản!');
+        } else {
+          alert(`Lỗi khi xóa tài khoản: ${err.message}`);
+        }
       }
     }
   };
@@ -384,11 +423,9 @@ const AdminPage = ({ onLogout }) => {
   );
 
   const handleShowPriceForm = () => {
-    closeAllForms();
     setShowPriceForm(true);
     setSelectedParkingLot(null);
   };
-
   const handleClosePriceForm = () => {
     setShowPriceForm(false);
     setSelectedParkingLot(null);
@@ -421,15 +458,11 @@ const AdminPage = ({ onLogout }) => {
     handleClosePriceForm();
   };
 
-  const handleShowParkingListForm = () => {
-    closeAllForms();
-    setShowParkingListForm(true);
-  };
-
+  const handleShowParkingListForm = () => setShowParkingListForm(true);
   const handleCloseParkingListForm = () => setShowParkingListForm(false);
 
   const handleViewParkingLot = (lotId) => {
-    closeAllForms();
+    setShowParkingListForm(false);
     setShowParkingForm(true);
     if (lotId === espParkingLot.id) {
       setParkingSlots({
@@ -453,25 +486,15 @@ const AdminPage = ({ onLogout }) => {
     }));
   };
 
-  const handleShowStatisticsPopup = () => {
-    closeAllForms();
-    setShowStatisticsPopup(true);
-  };
-
+  const handleShowStatisticsPopup = () => setShowStatisticsPopup(true);
   const handleCloseStatisticsPopup = () => {
     setShowStatisticsPopup(false);
     setShowChart(false);
   };
 
-  const handleShowChart = () => {
-    setShowChart(true);
-  };
+  const handleShowChart = () => setShowChart(true);
 
-  const handleShowFeedbackForm = () => {
-    closeAllForms();
-    setShowFeedbackForm(true);
-  };
-
+  const handleShowFeedbackForm = () => setShowFeedbackForm(true);
   const handleCloseFeedbackForm = () => {
     setShowFeedbackForm(false);
     setFeedbackSearchTerm('');
@@ -488,11 +511,7 @@ const AdminPage = ({ onLogout }) => {
         (feedback.phan_hoi || '').toLowerCase().includes(feedbackSearchTerm.toLowerCase())
     );
 
-  const handleShowAddParkingLotForm = () => {
-    closeAllForms();
-    setShowAddParkingLotForm(true);
-  };
-
+  const handleShowAddParkingLotForm = () => setShowAddParkingLotForm(true);
   const handleCloseAddParkingLotForm = () => {
     setShowAddParkingLotForm(false);
     setNewParkingLot({ name: '', image: 'https://via.placeholder.com/150', availableSlots: 0, price: 0 });
@@ -513,7 +532,6 @@ const AdminPage = ({ onLogout }) => {
   };
 
   const handleShowEditParkingLotForm = (lot) => {
-    closeAllForms();
     setEditParkingLot(lot);
     setShowEditParkingLotForm(true);
     if (lot.id === espParkingLot.id) {
@@ -665,9 +683,9 @@ const AdminPage = ({ onLogout }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.map((user) => (
-                      <tr key={user.id}>
-                        <td>{user.id}</td>
+                    {filteredUsers.map((user, index) => (
+                      <tr key={user.username}>
+                        <td>{index + 1}</td>
                         <td>{user.username}</td>
                         <td>{user.email}</td>
                         <td>********</td>
@@ -689,14 +707,14 @@ const AdminPage = ({ onLogout }) => {
                           </button>
                           <button
                             className="action-icon lock"
-                            onClick={() => handleLockAccount(user.id)}
+                            onClick={() => handleLockAccount(user.username)}
                             title={user.isLocked ? 'Mở Khóa' : 'Khóa'}
                           >
                             {user.isLocked ? '🔓' : '🔒'}
                           </button>
                           <button
                             className="action-icon delete"
-                            onClick={() => handleDeleteAccount(user.id)}
+                            onClick={() => handleDeleteAccount(user.username)}
                             title="Xóa"
                           >
                             🗑️
@@ -749,7 +767,7 @@ const AdminPage = ({ onLogout }) => {
                     value={newUser.role}
                     onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                   >
-                    <option value="Ngườidung">Ngườidung</option>
+                    <option value="Người dùng">Người dùng</option>
                     <option value="Admin">Admin</option>
                   </select>
                 </div>
@@ -841,10 +859,10 @@ const AdminPage = ({ onLogout }) => {
                 <div className="form-group">
                   <label>Quyền:</label>
                   <select
-                    value={editUser.role || 'Ngườidung'}
+                    value={editUser.role || 'Người dùng'}
                     onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
                   >
-                    <option value="Ngườidung">Ngườidung</option>
+                    <option value="Người dùng">Người dùng</option>
                     <option value="Admin">Admin</option>
                   </select>
                 </div>
@@ -1320,285 +1338,285 @@ const AdminPage = ({ onLogout }) => {
               <form onSubmit={handleEditParkingLot}>
                 <div className="form-group">
                   <label>Hình Ảnh:</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageChange(e, setEditParkingLot, editParkingLot)}
-                    />
-                    {editParkingLot.image && (
-                      <div className="image-preview">
-                        <img src={editParkingLot.image} alt="Preview" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label>Tên Bãi Đỗ:</label>
-                    <input
-                      type="text"
-                      value={editParkingLot.name || ''}
-                      onChange={(e) =>
-                        setEditParkingLot({ ...editParkingLot, name: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Số Chỗ Trống:</label>
-                    <input
-                      type="number"
-                      value={
-                        editParkingLot.id === espParkingLot.id
-                          ? espEmptySlots
-                          : editParkingLot.availableSlots || 0
-                      }
-                      onChange={(e) =>
-                        setEditParkingLot({ ...editParkingLot, availableSlots: e.target.value })
-                      }
-                      min="0"
-                      disabled={editParkingLot.id === espParkingLot.id}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Giá Tiền (VNĐ/giờ):</label>
-                    <input
-                      type="number"
-                      value={editParkingLot.price || 0}
-                      onChange={(e) =>
-                        setEditParkingLot({ ...editParkingLot, price: e.target.value })
-                      }
-                      min="0"
-                      required
-                    />
-                  </div>
-                  <div className="form-actions">
-                    <button type="submit" className="submit-button">
-                      Lưu
-                    </button>
-                    <button
-                      type="button"
-                      className="cancel-button"
-                      onClick={handleCloseEditParkingLotForm}
-                    >
-                      Hủy
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-  
-          {showParkingForm && (
-            <div className="parking-form">
-              <div className="parking-form-header">
-                <h3>Quản Lý Bãi Đỗ</h3>
-                <div className="form-actions">
-                  <button className="close-button" onClick={handleCloseParkingForm}>
-                    Đóng
-                  </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageChange(e, setEditParkingLot, editParkingLot)}
+                  />
+                  {editParkingLot.image && (
+                    <div className="image-preview">
+                      <img src={editParkingLot.image} alt="Preview" />
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="parking-lot">
-                <h4>
-                  Số chỗ trống còn lại:{' '}
-                  {parkingSlots.motorcycle.filter((slot) => !slot.isOccupied).length +
-                    parkingSlots.car.filter((slot) => !slot.isOccupied).length +
-                    parkingSlots.truck.filter((slot) => !slot.isOccupied).length}
-                </h4>
-                <div className="vehicle-section">
-                  <div className="vehicle-label">
-                    <span role="img" aria-label="Xe máy">
-                      🏍️
-                    </span>{' '}
-                    Xe máy
-                  </div>
-                  <div className="slots">
-                    {parkingSlots.motorcycle.map((slot) => (
-                      <button
-                        key={slot.id}
-                        className={`slot ${slot.isOccupied ? 'occupied' : 'available'}`}
-                        onClick={() => handleToggleSlot('motorcycle', slot.id)}
-                      >
-                        {slot.id}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="vehicle-section">
-                  <div className="vehicle-label">
-                    <span role="img" aria-label="Ô tô">
-                      🚗
-                    </span>{' '}
-                    Ô tô
-                  </div>
-                  <div className="slots">
-                    {parkingSlots.car.map((slot) => (
-                      <button
-                        key={slot.id}
-                        className={`slot ${slot.isOccupied ? 'occupied' : 'available'}`}
-                        onClick={() => handleToggleSlot('car', slot.id)}
-                      >
-                        {slot.id}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="vehicle-section">
-                  <div className="vehicle-label">
-                    <span role="img" aria-label="Xe tải">
-                      🚚
-                    </span>{' '}
-                    Xe tải
-                  </div>
-                  <div className="slots">
-                    {parkingSlots.truck.map((slot) => (
-                      <button
-                        key={slot.id}
-                        className={`slot ${slot.isOccupied ? 'occupied' : 'available'}`}
-                        onClick={() => handleToggleSlot('truck', slot.id)}
-                      >
-                        {slot.id}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-  
-          {showFeedbackForm && (
-            <div className="feedback-form">
-              <div className="feedback-form-header">
-                <h3>Đánh Giá và Phản Hồi</h3>
-                <div className="form-actions">
+                <div className="form-group">
+                  <label>Tên Bãi Đỗ:</label>
                   <input
                     type="text"
-                    placeholder="Tìm Kiếm..."
-                    value={feedbackSearchTerm}
-                    onChange={handleFeedbackSearch}
-                    className="search-input"
+                    value={editParkingLot.name || ''}
+                    onChange={(e) =>
+                      setEditParkingLot({ ...editParkingLot, name: e.target.value })
+                    }
+                    required
                   />
-                  <button className="close-button" onClick={handleCloseFeedbackForm}>
+                </div>
+                <div className="form-group">
+                  <label>Số Chỗ Trống:</label>
+                  <input
+                    type="number"
+                    value={
+                      editParkingLot.id === espParkingLot.id
+                        ? espEmptySlots
+                        : editParkingLot.availableSlots || 0
+                    }
+                    onChange={(e) =>
+                      setEditParkingLot({ ...editParkingLot, availableSlots: e.target.value })
+                    }
+                    min="0"
+                    disabled={editParkingLot.id === espParkingLot.id}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Giá Tiền (VNĐ/giờ):</label>
+                  <input
+                    type="number"
+                    value={editParkingLot.price || 0}
+                    onChange={(e) =>
+                      setEditParkingLot({ ...editParkingLot, price: e.target.value })
+                    }
+                    min="0"
+                    required
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="submit-button">
+                    Lưu
+                  </button>
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={handleCloseEditParkingLotForm}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showParkingForm && (
+          <div className="parking-form">
+            <div className="parking-form-header">
+              <h3>Quản Lý Bãi Đỗ</h3>
+              <div className="form-actions">
+                <button className="close-button" onClick={handleCloseParkingForm}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+            <div className="parking-lot">
+              <h4>
+                Số chỗ trống còn lại:{' '}
+                {parkingSlots.motorcycle.filter((slot) => !slot.isOccupied).length +
+                  parkingSlots.car.filter((slot) => !slot.isOccupied).length +
+                  parkingSlots.truck.filter((slot) => !slot.isOccupied).length}
+              </h4>
+              <div className="vehicle-section">
+                <div className="vehicle-label">
+                  <span role="img" aria-label="Xe máy">
+                    🏍️
+                  </span>{' '}
+                  Xe máy
+                </div>
+                <div className="slots">
+                  {parkingSlots.motorcycle.map((slot) => (
+                    <button
+                      key={slot.id}
+                      className={`slot ${slot.isOccupied ? 'occupied' : 'available'}`}
+                      onClick={() => handleToggleSlot('motorcycle', slot.id)}
+                    >
+                      {slot.id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="vehicle-section">
+                <div className="vehicle-label">
+                  <span role="img" aria-label="Ô tô">
+                    🚗
+                  </span>{' '}
+                  Ô tô
+                </div>
+                <div className="slots">
+                  {parkingSlots.car.map((slot) => (
+                    <button
+                      key={slot.id}
+                      className={`slot ${slot.isOccupied ? 'occupied' : 'available'}`}
+                      onClick={() => handleToggleSlot('car', slot.id)}
+                    >
+                      {slot.id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="vehicle-section">
+                <div className="vehicle-label">
+                  <span role="img" aria-label="Xe tải">
+                    🚚
+                  </span>{' '}
+                  Xe tải
+                </div>
+                <div className="slots">
+                  {parkingSlots.truck.map((slot) => (
+                    <button
+                      key={slot.id}
+                      className={`slot ${slot.isOccupied ? 'occupied' : 'available'}`}
+                      onClick={() => handleToggleSlot('truck', slot.id)}
+                    >
+                      {slot.id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showFeedbackForm && (
+          <div className="feedback-form">
+            <div className="feedback-form-header">
+              <h3>Đánh Giá và Phản Hồi</h3>
+              <div className="form-actions">
+                <input
+                  type="text"
+                  placeholder="Tìm Kiếm..."
+                  value={feedbackSearchTerm}
+                  onChange={handleFeedbackSearch}
+                  className="search-input"
+                />
+                <button className="close-button" onClick={handleCloseFeedbackForm}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+            <div className="table-container">
+              {feedbackLoading && <p>Đang tải danh sách phản hồi...</p>}
+              {feedbackError && <p className="error">Lỗi: {feedbackError}</p>}
+              {!feedbackLoading && !feedbackError && feedbacks.length === 0 && <p>Không có phản hồi nào.</p>}
+              {!feedbackLoading && !feedbackError && feedbacks.length > 0 && (
+                <table className="feedback-table">
+                  <thead>
+                    <tr>
+                      <th>Khách Hàng</th>
+                      <th>Số Điện Thoại</th>
+                      <th>Phản Hồi</th>
+                      <th>Đánh Giá</th>
+                      <th>Bãi Đỗ</th>
+                      <th>Ngày Nhận</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredFeedbacks.map((feedback) =>
+                      feedback && typeof feedback === 'object' ? (
+                        <tr key={feedback.id || Math.random()}>
+                          <td>{feedback.customer_name || 'N/A'}</td>
+                          <td>{feedback.phone || 'N/A'}</td>
+                          <td>{feedback.phan_hoi || 'N/A'}</td>
+                          <td>{renderStars(feedback.danh_gia)}</td>
+                          <td>{getParkingLotName(feedback.parkingLotId)}</td>
+                          <td>{feedback.ngay_nhan || 'N/A'}</td>
+                        </tr>
+                      ) : null
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {showStatisticsPopup && (
+          <div className="admin-page-statistics-popup-overlay">
+            <div className="admin-page-statistics-popup">
+              <div className="admin-page-statistics-header">
+                <h3>Thống Kê</h3>
+                <div className="admin-page-form-actions">
+                  <label>Ngày bắt đầu:</label>
+                  <input
+                    type="date"
+                    defaultValue="2025-03-19"
+                    className="admin-page-date-input"
+                  />
+                  <label>Ngày kết thúc:</label>
+                  <input
+                    type="date"
+                    defaultValue="2025-03-19"
+                    className="admin-page-date-input"
+                  />
+                  <button className="admin-page-filter-button">Tìm kiếm</button>
+                  <button className="admin-page-export-button">Xuất Excel</button>
+                  <button
+                    className="admin-page-close-button"
+                    onClick={handleCloseStatisticsPopup}
+                  >
                     Đóng
                   </button>
                 </div>
               </div>
-              <div className="table-container">
-                {feedbackLoading && <p>Đang tải danh sách phản hồi...</p>}
-                {feedbackError && <p className="error">Lỗi: {feedbackError}</p>}
-                {!feedbackLoading && !feedbackError && feedbacks.length === 0 && <p>Không có phản hồi nào.</p>}
-                {!feedbackLoading && !feedbackError && feedbacks.length > 0 && (
-                  <table className="feedback-table">
-                    <thead>
-                      <tr>
-                        <th>Khách Hàng</th>
-                        <th>Số Điện Thoại</th>
-                        <th>Phản Hồi</th>
-                        <th>Đánh Giá</th>
-                        <th>Bãi Đỗ</th>
-                        <th>Ngày Nhận</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredFeedbacks.map((feedback) =>
-                        feedback && typeof feedback === 'object' ? (
-                          <tr key={feedback.id || Math.random()}>
-                            <td>{feedback.customer_name || 'N/A'}</td>
-                            <td>{feedback.phone || 'N/A'}</td>
-                            <td>{feedback.phan_hoi || 'N/A'}</td>
-                            <td>{renderStars(feedback.danh_gia)}</td>
-                            <td>{getParkingLotName(feedback.parkingLotId)}</td>
-                            <td>{feedback.ngay_nhan || 'N/A'}</td>
-                          </tr>
-                        ) : null
-                      )}
-                    </tbody>
-                  </table>
-                )}
+              <div className="admin-page-stats-overview">
+                <div className="admin-page-stats-card">
+                  <span className="admin-page-stats-icon">💰</span>
+                  <div className="admin-page-stats-info">
+                    <h4>Doanh thu</h4>
+                    <p>{(statistics.totalRevenue || 0).toLocaleString()} VNĐ</p>
+                  </div>
+                </div>
+                <div className="admin-page-stats-card">
+                  <span className="admin-page-stats-icon">💸</span>
+                  <div className="admin-page-stats-info">
+                    <h4>Lợi nhuận</h4>
+                    <p>{(statistics.totalProfit || 0).toLocaleString()} VNĐ</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
-  
-          {showStatisticsPopup && (
-            <div className="admin-page-statistics-popup-overlay">
-              <div className="admin-page-statistics-popup">
-                <div className="admin-page-statistics-header">
-                  <h3>Thống Kê</h3>
-                  <div className="admin-page-form-actions">
-                    <label>Ngày bắt đầu:</label>
-                    <input
-                      type="date"
-                      defaultValue="2025-03-19"
-                      className="admin-page-date-input"
-                    />
-                    <label>Ngày kết thúc:</label>
-                    <input
-                      type="date"
-                      defaultValue="2025-03-19"
-                      className="admin-page-date-input"
-                    />
-                    <button className="admin-page-filter-button">Tìm kiếm</button>
-                    <button className="admin-page-export-button">Xuất Excel</button>
-                    <button
-                      className="admin-page-close-button"
-                      onClick={handleCloseStatisticsPopup}
-                    >
-                      Đóng
-                    </button>
-                  </div>
-                </div>
-                <div className="admin-page-stats-overview">
-                  <div className="admin-page-stats-card">
-                    <span className="admin-page-stats-icon">💰</span>
-                    <div className="admin-page-stats-info">
-                      <h4>Doanh thu</h4>
-                      <p>{(statistics.totalRevenue || 0).toLocaleString()} VNĐ</p>
-                    </div>
-                  </div>
-                  <div className="admin-page-stats-card">
-                    <span className="admin-page-stats-icon">💸</span>
-                    <div className="admin-page-stats-info">
-                      <h4>Lợi nhuận</h4>
-                      <p>{(statistics.totalProfit || 0).toLocaleString()} VNĐ</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="admin-page-stats-table-container">
-                  <table className="admin-page-stats-table">
-                    <thead>
-                      <tr>
-                        <th>Loại vị trí đỗ</th>
-                        <th>Giá thuê</th>
-                        <th>Tổng giờ thuê</th>
-                        <th>Tổng tiền</th>
+              <div className="admin-page-stats-table-container">
+                <table className="admin-page-stats-table">
+                  <thead>
+                    <tr>
+                      <th>Loại vị trí đỗ</th>
+                      <th>Giá thuê</th>
+                      <th>Tổng giờ thuê</th>
+                      <th>Tổng tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {statistics.parkingStats.map((stat, index) => (
+                      <tr key={index}>
+                        <td>{stat.type || 'N/A'}</td>
+                        <td>{(stat.pricePerHour || 0).toLocaleString()} VNĐ/h</td>
+                        <td>{(stat.totalHours || 0).toLocaleString()}</td>
+                        <td>{(stat.totalRevenue || 0).toLocaleString()} VNĐ</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {statistics.parkingStats.map((stat, index) => (
-                        <tr key={index}>
-                          <td>{stat.type || 'N/A'}</td>
-                          <td>{(stat.pricePerHour || 0).toLocaleString()} VNĐ/h</td>
-                          <td>{(stat.totalHours || 0).toLocaleString()}</td>
-                          <td>{(stat.totalRevenue || 0).toLocaleString()} VNĐ</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <button className="admin-page-chart-toggle-button" onClick={handleShowChart}>
-                    📊
-                  </button>
-                </div>
-                {showChart && (
-                  <div className="admin-page-chart-container">
-                    <Bar data={chartData} options={chartOptions} />
-                  </div>
-                )}
+                    ))}
+                  </tbody>
+                </table>
+                <button className="admin-page-chart-toggle-button" onClick={handleShowChart}>
+                  📊
+                </button>
               </div>
+              {showChart && (
+                <div className="admin-page-chart-container">
+                  <Bar data={chartData} options={chartOptions} />
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    );
-  };
-  
-  export default AdminPage;
+    </div>
+  );
+};
+
+export default AdminPage;
