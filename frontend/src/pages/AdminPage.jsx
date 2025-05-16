@@ -34,9 +34,8 @@ const fetchWithAuth = async (url, options = {}, navigate) => {
   console.log(`Gọi API: ${url} với phương thức ${options.method || 'GET'}`);
   const response = await fetch(url, { ...options, headers });
 
-  // Xử lý status 204 (No Content)
   if (response.status === 204) {
-    return null; // Không có body để parse
+    return null;
   }
 
   if (!response.ok) {
@@ -73,7 +72,7 @@ const AdminPage = ({ onLogout }) => {
   const [showAddAccountForm, setShowAddAccountForm] = useState(false);
   const [showEditAccountForm, setShowEditAccountForm] = useState(false);
   const [editUser, setEditUser] = useState(null);
-  const [showPriceForm, setShowPriceForm] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showParkingListForm, setShowParkingListForm] = useState(false);
   const [showParkingForm, setShowParkingForm] = useState(false);
   const [showStatisticsPopup, setShowStatisticsPopup] = useState(false);
@@ -99,16 +98,33 @@ const AdminPage = ({ onLogout }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [prices, setPrices] = useState({
-    car: { basePrice: 0, monthlyPrice: 0 },
-    motorcycle: { basePrice: 0, monthlyPrice: 0 },
-    truck: { basePrice: 0, monthlyPrice: 0 },
-  });
-  const [discounts, setDiscounts] = useState({
-    car: { oneMonth: 0, threeMonths: 0, sixMonths: 0, oneYear: 0 },
-    motorcycle: { oneMonth: 0, threeMonths: 0, sixMonths: 0, oneYear: 0 },
-    truck: { oneMonth: 0, threeMonths: 0, sixMonths: 0, oneYear: 0 },
-  });
+  const [transactions, setTransactions] = useState([
+    {
+      transactionCode: 'TXN001',
+      customerName: 'Nguyễn Văn A',
+      vehicleType: 'Xe máy',
+      time: '2025-05-16 09:00:00',
+      amount: 10000,
+      paymentMethod: 'Tiền mặt'
+    },
+    {
+      transactionCode: 'TXN002',
+      customerName: 'Trần Thị B',
+      vehicleType: 'Ô tô',
+      time: '2025-05-16 10:30:00',
+      amount: 50000,
+      paymentMethod: 'Chuyển khoản'
+    },
+    {
+      transactionCode: 'TXN003',
+      customerName: 'Lê Văn C',
+      vehicleType: 'Xe tải',
+      time: '2025-05-16 14:15:00',
+      amount: 80000,
+      paymentMethod: 'Thẻ tín dụng'
+    }
+  ]);
+  const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
   const [parkingLots, setParkingLots] = useState([]);
   const [newParkingLot, setNewParkingLot] = useState({
     name: '',
@@ -227,7 +243,7 @@ const AdminPage = ({ onLogout }) => {
     fetchUsers();
     fetchFeedbacks();
 
-    const socket = new WebSocket('ws://192.168.1.241:81');
+    const socket = new WebSocket('ws://192.168.1.81:81');
     socket.onopen = () => console.log('Connected to ESP32 WebSocket');
     socket.onmessage = (event) => {
       try {
@@ -284,11 +300,9 @@ const AdminPage = ({ onLogout }) => {
     }
   };
 
-  // Xử lý thêm tài khoản
   const handleAddAccount = async (e) => {
     e.preventDefault();
     try {
-      // Chuẩn bị dữ liệu
       const userData = {
         ...newUser,
         created_at: newUser.created_at || new Date().toISOString().slice(0, 19).replace('T', ' '),
@@ -298,19 +312,16 @@ const AdminPage = ({ onLogout }) => {
         isLocked: newUser.isLocked ?? 0,
       };
 
-      // Kiểm tra trùng username (tạm thời ở frontend)
       if (users.some((u) => u.username === userData.username)) {
         alert('Tên đăng nhập đã tồn tại!');
         return;
       }
 
-      // Gửi yêu cầu thêm tài khoản
       const data = await fetchWithAuth(`${API_BASE_URL}/api/user`, {
         method: 'POST',
         body: JSON.stringify(userData),
       }, navigate);
 
-      // Cập nhật danh sách người dùng
       setUsers([...users, data]);
       handleCloseAddAccountForm();
       alert('Thêm tài khoản thành công!');
@@ -380,25 +391,21 @@ const AdminPage = ({ onLogout }) => {
     }
   };
 
-  // Xử lý xóa tài khoản
   const handleDeleteAccount = async (username) => {
     if (window.confirm('Bạn có chắc muốn xóa tài khoản này?')) {
       try {
-        // Kiểm tra tài khoản có tồn tại không
         const userExists = users.find((user) => user.username === username);
         if (!userExists) {
           alert('Tài khoản không tồn tại!');
           return;
         }
 
-        // Gửi yêu cầu xóa
         await fetchWithAuth(
           `${API_BASE_URL}/api/user/${encodeURIComponent(username)}`,
           { method: 'DELETE' },
           navigate
         );
 
-        // Cập nhật danh sách người dùng
         setUsers(users.filter((user) => user.username !== username));
         alert('Xóa tài khoản thành công!');
       } catch (err) {
@@ -422,41 +429,17 @@ const AdminPage = ({ onLogout }) => {
       user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleShowPriceForm = () => {
-    setShowPriceForm(true);
-    setSelectedParkingLot(null);
-  };
-  const handleClosePriceForm = () => {
-    setShowPriceForm(false);
+  const handleShowPaymentForm = () => setShowPaymentForm(true);
+  const handleClosePaymentForm = () => {
+    setShowPaymentForm(false);
     setSelectedParkingLot(null);
   };
 
-  const handlePriceChange = (e, vehicleType) => {
-    const { name, value } = e.target;
-    setPrices((prevPrices) => ({
-      ...prevPrices,
-      [vehicleType]: { ...prevPrices[vehicleType], [name]: parseInt(value) || 0 },
-    }));
-  };
+  const handlePaymentSearch = (e) => setPaymentSearchTerm(e.target.value);
 
-  const handleDiscountChange = (e, vehicleType, duration) => {
-    const { value } = e.target;
-    setDiscounts((prevDiscounts) => ({
-      ...prevDiscounts,
-      [vehicleType]: { ...prevDiscounts[vehicleType], [duration]: parseInt(value) || 0 },
-    }));
-  };
-
-  const handleSavePrices = (e) => {
-    e.preventDefault();
-    if (!selectedParkingLot) {
-      alert('Vui lòng chọn một bãi đỗ trước khi lưu.');
-      return;
-    }
-    console.log(`Giá đã được lưu cho bãi đỗ ${selectedParkingLot.name}:`, prices);
-    console.log(`Giảm giá đã được lưu cho bãi đỗ ${selectedParkingLot.name}:`, discounts);
-    handleClosePriceForm();
-  };
+  const filteredTransactions = transactions.filter((transaction) =>
+    transaction.transactionCode?.toLowerCase().includes(paymentSearchTerm.toLowerCase())
+  );
 
   const handleShowParkingListForm = () => setShowParkingListForm(true);
   const handleCloseParkingListForm = () => setShowParkingListForm(false);
@@ -625,8 +608,8 @@ const AdminPage = ({ onLogout }) => {
             </button>
           </div>
           <div className="function-item">
-            <button className="function-button" onClick={handleShowPriceForm}>
-              Quản Lý Giá
+            <button className="function-button" onClick={handleShowPaymentForm}>
+              Quản Lý Thanh Toán
             </button>
           </div>
           <div className="function-item">
@@ -920,294 +903,53 @@ const AdminPage = ({ onLogout }) => {
           </div>
         )}
 
-        {showPriceForm && (
-          <div className="price-form-modal">
-            <div className="price-form">
-              <h3>Quản Lý Giá</h3>
-              <form onSubmit={handleSavePrices}>
-                <div className="form-group">
-                  <label>Chọn Bãi Đỗ:</label>
-                  <select
-                    value={selectedParkingLot?.id || ''}
-                    onChange={(e) => {
-                      const lotId = parseInt(e.target.value);
-                      const selectedLot = [...parkingLots, espParkingLot].find((lot) => lot.id === lotId);
-                      setSelectedParkingLot(selectedLot || null);
-                    }}
-                    required
-                  >
-                    <option value="">-- Chọn Bãi Đỗ --</option>
-                    {[...parkingLots, espParkingLot].map((lot) => (
-                      <option key={lot.id} value={lot.id}>
-                        {lot.name}
-                      </option>
+        {showPaymentForm && (
+          <div className="payment-form-modal">
+            <div className="payment-form-header">
+              <h3>Quản Lý Thanh Toán</h3>
+              <div className="form-actions">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm giao dịch..."
+                  value={paymentSearchTerm}
+                  onChange={handlePaymentSearch}
+                  className="search-input"
+                />
+                <button className="close-button" onClick={handleClosePaymentForm}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+            <div className="table-container">
+              {loading && <p>Đang tải danh sách giao dịch...</p>}
+              {error && <p className="error">Lỗi: {error}</p>}
+              {!loading && !error && transactions.length === 0 && <p>Không có giao dịch nào.</p>}
+              {!loading && !error && transactions.length > 0 && (
+                <table className="payment-table">
+                  <thead>
+                    <tr>
+                      <th>Mã Giao Dịch</th>
+                      <th>Khách Hàng</th>
+                      <th>Loại Xe</th>
+                      <th>Thời Gian</th>
+                      <th>Số Tiền</th>
+                      <th>Phương Thức</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTransactions.map((transaction, index) => (
+                      <tr key={index}>
+                        <td>{transaction.transactionCode || 'N/A'}</td>
+                        <td>{transaction.customerName || 'N/A'}</td>
+                        <td>{transaction.vehicleType || 'N/A'}</td>
+                        <td>{transaction.time || 'N/A'}</td>
+                        <td>{(transaction.amount || 0).toLocaleString()} đ</td>
+                        <td>{transaction.paymentMethod || 'N/A'}</td>
+                      </tr>
                     ))}
-                  </select>
-                </div>
-
-                {selectedParkingLot && (
-                  <>
-                    <div className="price-table-container">
-                      <h4>Bảng Giá Dịch Vụ - {selectedParkingLot.name}</h4>
-                      <table className="price-table">
-                        <thead>
-                          <tr>
-                            <th></th>
-                            <th>Giá (Theo giờ)</th>
-                            <th>Giá Theo Tháng</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td>Ô Tô</td>
-                            <td>
-                              <input
-                                type="number"
-                                name="basePrice"
-                                value={prices.car.basePrice}
-                                onChange={(e) => handlePriceChange(e, 'car')}
-                                min="0"
-                                required
-                              />
-                              VNĐ
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                name="monthlyPrice"
-                                value={prices.car.monthlyPrice}
-                                onChange={(e) => handlePriceChange(e, 'car')}
-                                min="0"
-                                required
-                              />
-                              VNĐ
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>Xe Máy</td>
-                            <td>
-                              <input
-                                type="number"
-                                name="basePrice"
-                                value={prices.motorcycle.basePrice}
-                                onChange={(e) => handlePriceChange(e, 'motorcycle')}
-                                min="0"
-                                required
-                              />
-                              VNĐ
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                name="monthlyPrice"
-                                value={prices.motorcycle.monthlyPrice}
-                                onChange={(e) => handlePriceChange(e, 'motorcycle')}
-                                min="0"
-                                required
-                              />
-                              VNĐ
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>Xe Tải</td>
-                            <td>
-                              <input
-                                type="number"
-                                name="basePrice"
-                                value={prices.truck.basePrice}
-                                onChange={(e) => handlePriceChange(e, 'truck')}
-                                min="0"
-                                required
-                              />
-                              VNĐ
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                name="monthlyPrice"
-                                value={prices.truck.monthlyPrice}
-                                onChange={(e) => handlePriceChange(e, 'truck')}
-                                min="0"
-                                required
-                              />
-                              VNĐ
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="discount-table-container">
-                      <h4>Bảng Giảm Giá - {selectedParkingLot.name}</h4>
-                      <table className="discount-table">
-                        <thead>
-                          <tr>
-                            <th></th>
-                            <th>Ô Tô</th>
-                            <th>Xe Máy</th>
-                            <th>Xe Tải</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td>1 Tháng</td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.car.oneMonth}
-                                onChange={(e) => handleDiscountChange(e, 'car', 'oneMonth')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.motorcycle.oneMonth}
-                                onChange={(e) => handleDiscountChange(e, 'motorcycle', 'oneMonth')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.truck.oneMonth}
-                                onChange={(e) => handleDiscountChange(e, 'truck', 'oneMonth')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>3 Tháng</td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.car.threeMonths}
-                                onChange={(e) => handleDiscountChange(e, 'car', 'threeMonths')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.motorcycle.threeMonths}
-                                onChange={(e) => handleDiscountChange(e, 'motorcycle', 'threeMonths')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.truck.threeMonths}
-                                onChange={(e) => handleDiscountChange(e, 'truck', 'threeMonths')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>6 Tháng</td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.car.sixMonths}
-                                onChange={(e) => handleDiscountChange(e, 'car', 'sixMonths')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.motorcycle.sixMonths}
-                                onChange={(e) => handleDiscountChange(e, 'motorcycle', 'sixMonths')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.truck.sixMonths}
-                                onChange={(e) => handleDiscountChange(e, 'truck', 'sixMonths')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>1 Năm</td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.car.oneYear}
-                                onChange={(e) => handleDiscountChange(e, 'car', 'oneYear')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.motorcycle.oneYear}
-                                onChange={(e) => handleDiscountChange(e, 'motorcycle', 'oneYear')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                value={discounts.truck.oneYear}
-                                onChange={(e) => handleDiscountChange(e, 'truck', 'oneYear')}
-                                min="0"
-                                max="100"
-                                required
-                              />
-                              %
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
-
-                <div className="form-actions">
-                  <button type="submit" className="submit-button" disabled={!selectedParkingLot}>
-                    Cập Nhật
-                  </button>
-                  <button type="button" className="cancel-button" onClick={handleClosePriceForm}>
-                    Hủy <span className="cancel-icon">✖</span>
-                  </button>
-                </div>
-              </form>
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
@@ -1463,11 +1205,11 @@ const AdminPage = ({ onLogout }) => {
               </div>
               <div className="vehicle-section">
                 <div className="vehicle-label">
-                  <span role="img" aria-label="Xe tải">
-                    🚚
-                  </span>{' '}
-                  Xe tải
-                </div>
+                    <span role="img" aria-label="Xe tải">
+                      🚚
+                    </span>{' '}
+                    Xe tải
+                  </div>
                 <div className="slots">
                   {parkingSlots.truck.map((slot) => (
                     <button
