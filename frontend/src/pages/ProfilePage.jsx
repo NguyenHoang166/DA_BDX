@@ -8,13 +8,15 @@ function ProfilePage({ user, setUser }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    name: user?.name || 'Nguyễn Hoàng',
-    role: user?.role || 'Người dùng',
-    gender: user?.gender || 'Nam',
-    dob: user?.dob || '01/01/2000',
-    cccd: user?.cccd || '123456789012',
+    id: user?.id || 1,
+    username: user?.username || 'nguyenhoang',
     email: user?.email || 'example@email.com',
-    avatar: user?.avatar || defaultAvatar, // Thêm avatar vào profile
+    role: user?.role || 'Người dùng',
+    phone: user?.phone || '0123456789',
+    created_at: user?.created_at || new Date().toISOString(),
+    isActive: user?.isActive !== undefined ? user.isActive : 1,
+    isLocked: user?.isLocked !== undefined ? user.isLocked : 0,
+    avatar: user?.avatar || defaultAvatar, // Maps to 'image' in DB
   });
   const fileInputRef = useRef(null);
 
@@ -34,7 +36,6 @@ function ProfilePage({ user, setUser }) {
         ...prevProfile,
         avatar: avatarUrl,
       }));
-      // Cập nhật avatar trong user
       setUser((prevUser) => ({
         ...prevUser,
         avatar: avatarUrl,
@@ -48,22 +49,18 @@ function ProfilePage({ user, setUser }) {
 
   const handleSave = () => {
     setIsEditing(false);
-    // Cập nhật thông tin user sau khi lưu
     setUser((prevUser) => ({
       ...prevUser,
-      name: profile.name,
-      role: profile.role,
-      gender: profile.gender,
-      dob: profile.dob,
-      cccd: profile.cccd,
+      username: profile.username,
       email: profile.email,
+      phone: profile.phone,
       avatar: profile.avatar,
     }));
     console.log('Thông tin đã được lưu:', profile);
   };
 
   const handleBack = () => {
-    navigate(-1); // Quay lại trang trước đó
+    navigate(-1);
   };
 
   return (
@@ -92,67 +89,20 @@ function ProfilePage({ user, setUser }) {
         </div>
         <div className="profile-details">
           <div className="profile-field">
-            <label>Tên Người dùng:</label>
+            <label>ID:</label>
+            <span>{profile.id}</span>
+          </div>
+          <div className="profile-field">
+            <label>Tên tài khoản:</label>
             {isEditing ? (
               <input
                 type="text"
-                name="name"
-                value={profile.name}
+                name="username"
+                value={profile.username}
                 onChange={handleInputChange}
               />
             ) : (
-              <span>{profile.name}</span>
-            )}
-          </div>
-          <div className="profile-field">
-            <label>Role:</label>
-            {isEditing ? (
-              <input
-                type="text"
-                name="role"
-                value={profile.role}
-                onChange={handleInputChange}
-              />
-            ) : (
-              <span>{profile.role}</span>
-            )}
-          </div>
-          <div className="profile-field">
-            <label>Giới tính:</label>
-            {isEditing ? (
-              <select name="gender" value={profile.gender} onChange={handleInputChange}>
-                <option value="Nam">Nam</option>
-                <option value="Nữ">Nữ</option>
-                <option value="Khác">Khác</option>
-              </select>
-            ) : (
-              <span>{profile.gender}</span>
-            )}
-          </div>
-          <div className="profile-field">
-            <label>Ngày sinh:</label>
-            {isEditing ? (
-              <input
-                type="text"
-                name="dob"
-                value={profile.dob}
-                onChange={handleInputChange}
-              />
-            ) : (
-              <span>{profile.dob}</span>
-            )}
-          </div>
-          <div className="profile-field">
-            <label>CCCD:</label>
-            {isEditing ? (
-              <input
-                type="text"
-                name="cccd"
-                value={profile.cccd}
-                onChange={handleInputChange}
-              />
-            ) : (
-              <span>{profile.cccd}</span>
+              <span>{profile.username}</span>
             )}
           </div>
           <div className="profile-field">
@@ -167,6 +117,35 @@ function ProfilePage({ user, setUser }) {
             ) : (
               <span>{profile.email}</span>
             )}
+          </div>
+          <div className="profile-field">
+            <label>Role:</label>
+            <span>{profile.role}</span>
+          </div>
+          <div className="profile-field">
+            <label>Số điện thoại:</label>
+            {isEditing ? (
+              <input
+                type="text"
+                name="phone"
+                value={profile.phone}
+                onChange={handleInputChange}
+              />
+            ) : (
+              <span>{profile.phone}</span>
+            )}
+          </div>
+          <div className="profile-field">
+            <label>Ngày tạo tài khoản:</label>
+            <span>{new Date(profile.created_at).toLocaleString()}</span>
+          </div>
+          <div className="profile-field">
+            <label>Trạng thái hoạt động:</label>
+            <span>{profile.isActive ? 'Hoạt động' : 'Không hoạt động'}</span>
+          </div>
+          <div className="profile-field">
+            <label>Trạng thái khóa:</label>
+            <span>{profile.isLocked ? 'Đã khóa' : 'Không khóa'}</span>
           </div>
         </div>
         <div className="profile-actions">

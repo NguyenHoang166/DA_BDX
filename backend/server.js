@@ -3,6 +3,8 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users'); 
 const feedbackRoutes = require('./routes/feedback');
+const payRoutes = require('./routes/pay');
+
 require('dotenv').config();
 
 const app = express();
@@ -15,6 +17,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/thanh-toan', payRoutes);
 
 // Khởi động server
 const PORT = process.env.PORT || 5000;

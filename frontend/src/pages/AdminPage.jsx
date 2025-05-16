@@ -15,7 +15,7 @@ import './AdminPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const API_BASE_URL = 'http://localhost:5000'; // Thay bằng URL backend thực tế
+const API_BASE_URL = 'http://localhost:5000'; // URL backend
 
 // Hàm gọi API với xử lý token và lỗi
 const fetchWithAuth = async (url, options = {}, navigate) => {
@@ -98,38 +98,7 @@ const AdminPage = ({ onLogout }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [transactions, setTransactions] = useState([
-    {
-      transactionCode: 'TXN001',
-      customerName: 'Nguyễn Văn A',
-      vehicleType: 'Xe máy',
-      time: '2025-05-16 09:00:00',
-      amount: 10000,
-      paymentMethod: 'Tiền mặt',
-      email: 'nguyenvana@example.com',
-      phone: '0901234567'
-    },
-    {
-      transactionCode: 'TXN002',
-      customerName: 'Trần Thị B',
-      vehicleType: 'Ô tô',
-      time: '2025-05-16 10:30:00',
-      amount: 50000,
-      paymentMethod: 'Chuyển khoản',
-      email: 'tranthib@example.com',
-      phone: '0912345678'
-    },
-    {
-      transactionCode: 'TXN003',
-      customerName: 'Lê Văn C',
-      vehicleType: 'Xe tải',
-      time: '2025-05-16 14:15:00',
-      amount: 80000,
-      paymentMethod: 'Thẻ tín dụng',
-      email: 'levanc@example.com',
-      phone: '0923456789'
-    }
-  ]);
+  const [transactions, setTransactions] = useState([]);
   const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
   const [parkingLots, setParkingLots] = useState([]);
   const [newParkingLot, setNewParkingLot] = useState({
@@ -148,10 +117,22 @@ const AdminPage = ({ onLogout }) => {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
   const [statistics, setStatistics] = useState({
-    totalRevenue: 0,
-    totalProfit: 0,
-    parkingStats: [],
-    dailyData: [],
+    totalRevenue: 125000000,
+    totalProfit: 75000000,
+    parkingStats: [
+      { type: 'Xe máy', pricePerHour: 5000, totalHours: 1000, totalRevenue: 5000000 },
+      { type: 'Ô tô', pricePerHour: 20000, totalHours: 500, totalRevenue: 10000000 },
+      { type: 'Xe tải', pricePerHour: 50000, totalHours: 200, totalRevenue: 10000000 },
+    ],
+    dailyData: [
+      { date: '2025-03-13', revenue: 5000000, capital: 2000000 },
+      { date: '2025-03-14', revenue: 7000000, capital: 3000000 },
+      { date: '2025-03-15', revenue: 6000000, capital: 2500000 },
+      { date: '2025-03-16', revenue: 8000000, capital: 3500000 },
+      { date: '2025-03-17', revenue: 9000000, capital: 4000000 },
+      { date: '2025-03-18', revenue: 10000000, capital: 4500000 },
+      { date: '2025-03-19', revenue: 12000000, capital: 5000000 },
+    ],
   });
   const [espParkingLot, setEspParkingLot] = useState({
     id: 1,
@@ -246,8 +227,40 @@ const AdminPage = ({ onLogout }) => {
       }
     };
 
+    const fetchTransactions = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log('Bắt đầu gọi API thanh toán...');
+        const data = await fetchWithAuth(`${API_BASE_URL}/api/thanh-toan`, {}, navigate);
+        console.log('Dữ liệu API thanh toán:', data);
+        const mappedData = Array.isArray(data)
+          ? data.map(item => ({
+              id: item.id || Math.random(),
+              transactionCode: item.ma_giao_dich || item.transactionCode || 'N/A',
+              customerName: item.username || item.ten_khach_hang || item.customerName || 'N/A',
+              vehicleType: item.loai_xe || item.vehicleType || 'N/A',
+              time: item.thoi_gian || item.time || 'N/A',
+              amount: item.so_tien || item.amount || 0,
+              paymentMethod: item.phuong_thuc_thanh_toan || item.phuong_thuc || item.paymentMethod || 'N/A',
+              email: item.email || 'N/A',
+              phone: item.phone || item.so_dien_thoai || 'N/A'
+            }))
+          : [];
+        console.log('Dữ liệu thanh toán đã ánh xạ:', mappedData);
+        setTransactions(mappedData);
+      } catch (err) {
+        console.error('Lỗi khi gọi API thanh toán:', err);
+        setError(err.message);
+        alert(`Lỗi khi lấy danh sách giao dịch: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchUsers();
     fetchFeedbacks();
+    fetchTransactions();
 
     const socket = new WebSocket('ws://192.168.1.81:81');
     socket.onopen = () => console.log('Connected to ESP32 WebSocket');
@@ -927,6 +940,7 @@ const AdminPage = ({ onLogout }) => {
               </div>
             </div>
             <div className="table-container">
+              {console.log('Render payment form:', { loading, error, transactions })}
               {loading && <p>Đang tải danh sách giao dịch...</p>}
               {error && <p className="error">Lỗi: {error}</p>}
               {!loading && !error && transactions.length === 0 && <p>Không có giao dịch nào.</p>}
@@ -945,8 +959,8 @@ const AdminPage = ({ onLogout }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredTransactions.map((transaction, index) => (
-                      <tr key={index}>
+                    {filteredTransactions.map((transaction) => (
+                      <tr key={transaction.transactionCode || transaction.id}>
                         <td>{transaction.transactionCode || 'N/A'}</td>
                         <td>{transaction.customerName || 'N/A'}</td>
                         <td>{transaction.vehicleType || 'N/A'}</td>
@@ -1337,8 +1351,8 @@ const AdminPage = ({ onLogout }) => {
                 <table className="admin-page-stats-table">
                   <thead>
                     <tr>
-                      <th>Loại vị trí đỗ</th>
-                      <th>Giá thuê</th>
+                      <th>Loại Xe</th>
+                      <th>Tổng Lượt Thuê</th>
                       <th>Tổng giờ thuê</th>
                       <th>Tổng tiền</th>
                     </tr>
