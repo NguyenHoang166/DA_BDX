@@ -8,7 +8,6 @@ import emailjs from "emailjs-com";
 export default function ParkingSelectionPage() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCustomerInfoModal, setShowCustomerInfoModal] = useState(false);
-  const [showMomoPaymentModal, setShowMomoPaymentModal] = useState(false);
   const [showVNPayPaymentModal, setShowVNPayPaymentModal] = useState(false);
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -59,7 +58,7 @@ export default function ParkingSelectionPage() {
 
   useEffect(() => {
     // Kết nối WebSocket với ESP32
-    const socket = new WebSocket("ws://192.168.1.81:81");
+    const socket = new WebSocket("ws://192.168.1.115:81");
 
     socket.onopen = () => {
       console.log("Connected to ESP32 WebSocket");
@@ -186,11 +185,6 @@ export default function ParkingSelectionPage() {
     setSelectedPaymentMethod("");
   };
 
-  // Đóng modal thanh toán Momo
-  const closeMomoPaymentModal = () => {
-    setShowMomoPaymentModal(false);
-  };
-
   // Đóng modal thanh toán VNPay
   const closeVNPayPaymentModal = () => {
     setShowVNPayPaymentModal(false);
@@ -307,10 +301,7 @@ export default function ParkingSelectionPage() {
     setOrders([...orders, newOrder]);
     setQrCode(defaultQrCode);
 
-    if (selectedPaymentMethod === "momo") {
-      setShowCustomerInfoModal(false);
-      setShowMomoPaymentModal(true);
-    } else if (selectedPaymentMethod === "vnpay") {
+    if (selectedPaymentMethod === "vnpay") {
       setShowCustomerInfoModal(false);
       setShowVNPayPaymentModal(true);
     } else {
@@ -356,16 +347,6 @@ export default function ParkingSelectionPage() {
           console.error("Failed to send email:", error);
         }
       );
-  };
-
-  // Xử lý khi xác nhận thanh toán Momo
-  const handleMomoPaymentConfirmation = () => {
-    const newOrder = orders[orders.length - 1];
-    setShowMomoPaymentModal(false);
-    setShowOrderDetailsModal(true);
-
-    sendOrderDetailsEmail(newOrder);
-    alert(`Hóa đơn đã được gửi đến email: ${customerInfo.email}`);
   };
 
   // Xử lý khi xác nhận thanh toán VNPay
@@ -614,7 +595,7 @@ export default function ParkingSelectionPage() {
             <div className="modal-section">
               <label>Phương thức thanh toán</label>
               <div className="payment-method-options">
-                {["momo", "vnpay", "cash"].map((method) => (
+                {["vnpay", "cash"].map((method) => (
                   <label key={method} className="payment-method-item">
                     <input
                       type="radio"
@@ -623,7 +604,7 @@ export default function ParkingSelectionPage() {
                       checked={selectedPaymentMethod === method}
                       onChange={(e) => setSelectedPaymentMethod(e.target.value)}
                     />
-                    {method === "momo" ? "Momo" : method === "vnpay" ? "VNPay" : "Tiền mặt"}
+                    {method === "vnpay" ? "VNPay" : "Tiền mặt"}
                   </label>
                 ))}
               </div>
@@ -641,84 +622,6 @@ export default function ParkingSelectionPage() {
         </div>
       )}
 
-      {showMomoPaymentModal && selectedLotForBooking && (
-        <div className="modal-overlay">
-          <div className="modal-content momo-payment-modal">
-            <h2>Thanh toán bằng Momo</h2>
-            <div className="momo-payment-container">
-              <div className="momo-qr-section">
-                <h3>Quét mã QR để thanh toán</h3>
-                <div className="qr-placeholder">
-                  <p>[Mã QR sẽ hiển thị ở đây]</p>
-                  <p>Quét mã này bằng ứng dụng Momo để thanh toán</p>
-                </div>
-              </div>
-
-              <div className="momo-order-details">
-                <h3>Thông tin đơn hàng</h3>
-                <div className="booking-details">
-                  <div className="detail-row">
-                    <span>Họ và tên:</span>
-                    <span>{customerInfo.name}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Số điện thoại:</span>
-                    <span>{customerInfo.phone}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Email:</span>
-                    <span>{customerInfo.email}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Biển số xe:</span>
-                    <span>{customerInfo.licensePlate}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Bãi xe:</span>
-                    <span>{selectedLotForBooking.name}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Vị trí:</span>
-                    <span>{selectedPositions.join(", ")}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Loại xe:</span>
-                    <span>{selectedVehicleType === "motorcycle" ? "Xe máy" : selectedVehicleType === "car" ? "Ô tô" : "Xe tải"}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Thời gian bắt đầu:</span>
-                    <span>{new Date(startDate).toLocaleString()}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Thời gian kết thúc:</span>
-                    <span>{new Date(endDate).toLocaleString()}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Thời gian thuê:</span>
-                    <span>{calculateDuration()} giờ</span>
-                  </div>
-                  <div className="detail-row total">
-                    <span>Tổng cộng:</span>
-                    <span>
-                      {(selectedLotForBooking.price * calculateDuration() * selectedPositions.length).toLocaleString()} VNĐ
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-buttons">
-              <button className="confirm-btn" onClick={handleMomoPaymentConfirmation}>
-                Đóng
-              </button>
-              <button className="cancel-btn" onClick={closeMomoPaymentModal}>
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showVNPayPaymentModal && selectedLotForBooking && (
         <div className="modal-overlay">
           <div className="modal-content vnpay-payment-modal">
@@ -726,10 +629,6 @@ export default function ParkingSelectionPage() {
             <div className="vnpay-payment-container">
               <div className="vnpay-qr-section">
                 <h3>Quét mã QR để thanh toán</h3>
-                <div className="qr-placeholder">
-                  <p>[Mã QR sẽ hiển thị ở đây]</p>
-                  <p>Quét mã này bằng ứng dụng VNPay để thanh toán</p>
-                </div>
               </div>
 
               <div className="vnpay-order-details">
@@ -784,17 +683,11 @@ export default function ParkingSelectionPage() {
                 </div>
               </div>
             </div>
-
-            <div className="modal-buttons">
-              <button className="confirm-btn" onClick={handleVNPayPaymentConfirmation}>
-                Xác nhận thanh toán
-              </button>
               <button className="cancel-btn" onClick={closeVNPayPaymentModal}>
                 Hủy
               </button>
             </div>
           </div>
-        </div>
       )}
 
       {showOrderDetailsModal && selectedLotForBooking && (
@@ -847,7 +740,8 @@ export default function ParkingSelectionPage() {
                   <span>{new Date(endDate).toLocaleString()}</span>
                 </div>
                 <div className="detail-row">
-                  <span>Thời gian thuê:</span>
+                  <span>Thời gian thuê:       
+                  </span>
                   <span>{calculateDuration()} giờ</span>
                 </div>
                 <div className="detail-row total">
@@ -864,7 +758,7 @@ export default function ParkingSelectionPage() {
               <div className="booking-details">
                 <div className="detail-row">
                   <span>Phương thức:</span>
-                  <span>{selectedPaymentMethod === "momo" ? "Momo" : selectedPaymentMethod === "vnpay" ? "VNPay" : "Tiền mặt"}</span>
+                  <span>{selectedPaymentMethod === "vnpay" ? "VNPay" : "Tiền mặt"}</span>
                 </div>
               </div>
             </div>

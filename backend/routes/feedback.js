@@ -7,7 +7,7 @@ router.get('/', async (req, res) => {
   try {
     const { search } = req.query; // Lấy tham số tìm kiếm từ query string
     let query = `
-      SELECT d.id, d.phan_hoi, d.danh_gia, d.ngay_nhan, 
+      SELECT d.id_danh_gia, d.phan_hoi, d.danh_gia, d.ngay_nhan, 
              u.username AS customer_name, u.phone AS phone
       FROM danh_gia_phan_hoi d
       JOIN users u ON d.user_id = u.id

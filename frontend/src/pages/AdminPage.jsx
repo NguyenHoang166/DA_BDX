@@ -117,23 +117,15 @@ const AdminPage = ({ onLogout }) => {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
   const [statistics, setStatistics] = useState({
-    totalRevenue: 125000000,
-    totalProfit: 75000000,
-    parkingStats: [
-      { type: 'Xe máy', pricePerHour: 5000, totalHours: 1000, totalRevenue: 5000000 },
-      { type: 'Ô tô', pricePerHour: 20000, totalHours: 500, totalRevenue: 10000000 },
-      { type: 'Xe tải', pricePerHour: 50000, totalHours: 200, totalRevenue: 10000000 },
-    ],
-    dailyData: [
-      { date: '2025-03-13', revenue: 5000000, capital: 2000000 },
-      { date: '2025-03-14', revenue: 7000000, capital: 3000000 },
-      { date: '2025-03-15', revenue: 6000000, capital: 2500000 },
-      { date: '2025-03-16', revenue: 8000000, capital: 3500000 },
-      { date: '2025-03-17', revenue: 9000000, capital: 4000000 },
-      { date: '2025-03-18', revenue: 10000000, capital: 4500000 },
-      { date: '2025-03-19', revenue: 12000000, capital: 5000000 },
-    ],
+    totalRevenue: 0,
+    totalProfit: 0,
+    parkingStats: [],
+    dailyData: [],
   });
+  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
+  const [statisticsLoading, setStatisticsLoading] = useState(false);
+  const [statisticsError, setStatisticsError] = useState(null);
   const [espParkingLot, setEspParkingLot] = useState({
     id: 1,
     name: 'Bãi đỗ ESP32',
@@ -176,6 +168,34 @@ const AdminPage = ({ onLogout }) => {
         ticks: { callback: (value) => `${(value / 1000000).toFixed(1)}M` },
       },
     },
+  };
+
+  const fetchStatistics = async (start = null, end = null) => {
+    setStatisticsLoading(true);
+    setStatisticsError(null);
+    try {
+      let url = `${API_BASE_URL}/api/statistics`;
+      if (start && end) {
+        url += `?startDate=${start}&endDate=${end}`;
+      }
+      console.log(`Gọi API thống kê: ${url}`);
+      const data = await fetchWithAuth(url, {}, navigate);
+      if (!data || typeof data !== 'object') {
+        throw new Error('Dữ liệu thống kê không hợp lệ.');
+      }
+      setStatistics({
+        totalRevenue: data.totalRevenue || 0,
+        totalProfit: data.totalProfit || 0,
+        parkingStats: Array.isArray(data.parkingStats) ? data.parkingStats : [],
+        dailyData: Array.isArray(data.dailyData) ? data.dailyData : [],
+      });
+    } catch (err) {
+      console.error('Lỗi khi lấy dữ liệu thống kê:', err);
+      setStatisticsError(err.message);
+      alert(`Lỗi khi lấy dữ liệu thống kê: ${err.message}`);
+    } finally {
+      setStatisticsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -235,16 +255,17 @@ const AdminPage = ({ onLogout }) => {
         const data = await fetchWithAuth(`${API_BASE_URL}/api/thanh-toan`, {}, navigate);
         console.log('Dữ liệu API thanh toán:', data);
         const mappedData = Array.isArray(data)
-          ? data.map(item => ({
+          ? data.map((item) => ({
               id: item.id || Math.random(),
               transactionCode: item.ma_giao_dich || item.transactionCode || 'N/A',
               customerName: item.username || item.ten_khach_hang || item.customerName || 'N/A',
               vehicleType: item.loai_xe || item.vehicleType || 'N/A',
               time: item.thoi_gian || item.time || 'N/A',
               amount: item.so_tien || item.amount || 0,
-              paymentMethod: item.phuong_thuc_thanh_toan || item.phuong_thuc || item.paymentMethod || 'N/A',
+              paymentMethod:
+                item.phuong_thuc_thanh_toan || item.phuong_thuc || item.paymentMethod || 'N/A',
               email: item.email || 'N/A',
-              phone: item.phone || item.so_dien_thoai || 'N/A'
+              phone: item.phone || item.so_dien_thoai || 'N/A',
             }))
           : [];
         console.log('Dữ liệu thanh toán đã ánh xạ:', mappedData);
@@ -279,6 +300,12 @@ const AdminPage = ({ onLogout }) => {
 
     return () => socket.close();
   }, [navigate]);
+
+  useEffect(() => {
+    if (showStatisticsPopup) {
+      fetchStatistics();
+    }
+  }, [showStatisticsPopup]);
 
   const handleLogout = () => {
     onLogout();
@@ -951,7 +978,7 @@ const AdminPage = ({ onLogout }) => {
                       <th>Mã Giao Dịch</th>
                       <th>Khách Hàng</th>
                       <th>Loại Xe</th>
-                      <th>Thời Gian</th>
+                      <th>Thời Gian Giao Dịch</th>
                       <th>Số Tiền</th>
                       <th>Phương Thức</th>
                       <th>Email</th>
@@ -1073,9 +1100,7 @@ const AdminPage = ({ onLogout }) => {
                   <input
                     type="number"
                     value={newParkingLot.price}
-                    onChange={(e) =>
-                      setNewParkingLot({ ...newParkingLot, price: e.target.value })
-                    }
+                    onChange={(e) => setNewParkingLot({ ...newParkingLot, price: e.target.value })}
                     min="0"
                     required
                   />
@@ -1312,16 +1337,29 @@ const AdminPage = ({ onLogout }) => {
                   <label>Ngày bắt đầu:</label>
                   <input
                     type="date"
-                    defaultValue="2025-03-19"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
                     className="admin-page-date-input"
                   />
                   <label>Ngày kết thúc:</label>
                   <input
                     type="date"
-                    defaultValue="2025-03-19"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
                     className="admin-page-date-input"
                   />
-                  <button className="admin-page-filter-button">Tìm kiếm</button>
+                  <button
+                    className="admin-page-filter-button"
+                    onClick={() => {
+                      if (new Date(startDate) > new Date(endDate)) {
+                        alert('Ngày bắt đầu không được lớn hơn ngày kết thúc!');
+                        return;
+                      }
+                      fetchStatistics(startDate, endDate);
+                    }}
+                  >
+                    Tìm kiếm
+                  </button>
                   <button className="admin-page-export-button">Xuất Excel</button>
                   <button
                     className="admin-page-close-button"
@@ -1332,42 +1370,60 @@ const AdminPage = ({ onLogout }) => {
                 </div>
               </div>
               <div className="admin-page-stats-overview">
-                <div className="admin-page-stats-card">
-                  <span className="admin-page-stats-icon">💰</span>
-                  <div className="admin-page-stats-info">
-                    <h4>Doanh thu</h4>
-                    <p>{(statistics.totalRevenue || 0).toLocaleString()} VNĐ</p>
-                  </div>
-                </div>
-                <div className="admin-page-stats-card">
-                  <span className="admin-page-stats-icon">💸</span>
-                  <div className="admin-page-stats-info">
-                    <h4>Lợi nhuận</h4>
-                    <p>{(statistics.totalProfit || 0).toLocaleString()} VNĐ</p>
-                  </div>
-                </div>
+                {statisticsLoading && <p>Đang tải dữ liệu thống kê...</p>}
+                {statisticsError && <p className="error">Lỗi: {statisticsError}</p>}
+                {!statisticsLoading && !statisticsError && (
+                  <>
+                    <div className="admin-page-stats-card">
+                      <span className="admin-page-stats-icon">💰</span>
+                      <div className="admin-page-stats-info">
+                        <h4>Doanh thu</h4>
+                        <p>{(statistics.totalRevenue || 0).toLocaleString()} VNĐ</p>
+                      </div>
+                    </div>
+                    <div className="admin-page-stats-card">
+                      <span className="admin-page-stats-icon">💸</span>
+                      <div className="admin-page-stats-info">
+                        <h4>Lợi nhuận</h4>
+                        <p>{(statistics.totalProfit || 0).toLocaleString()} VNĐ</p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="admin-page-stats-table-container">
-                <table className="admin-page-stats-table">
-                  <thead>
-                    <tr>
-                      <th>Loại Xe</th>
-                      <th>Tổng Lượt Thuê</th>
-                      <th>Tổng giờ thuê</th>
-                      <th>Tổng tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {statistics.parkingStats.map((stat, index) => (
-                      <tr key={index}>
-                        <td>{stat.type || 'N/A'}</td>
-                        <td>{(stat.pricePerHour || 0).toLocaleString()} VNĐ/h</td>
-                        <td>{(stat.totalHours || 0).toLocaleString()}</td>
-                        <td>{(stat.totalRevenue || 0).toLocaleString()} VNĐ</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {statisticsLoading && <p>Đang tải bảng thống kê...</p>}
+                {statisticsError && <p className="error">Lỗi: {statisticsError}</p>}
+                {!statisticsLoading && !statisticsError && (
+                  <>
+                    {Array.isArray(statistics.parkingStats) && statistics.parkingStats.length === 0 ? (
+                      <p>Không có dữ liệu thống kê.</p>
+                    ) : (
+                      Array.isArray(statistics.parkingStats) && statistics.parkingStats.length > 0 && (
+                        <table className="admin-page-stats-table">
+                          <thead>
+                            <tr>
+                              <th>Loại xe</th>
+                              <th>Giá mỗi giờ</th>
+                              <th>Tổng giờ thuê</th>
+                              <th>Tổng tiền</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {statistics.parkingStats.map((stat, index) => (
+                              <tr key={index}>
+                                <td>{stat.type || 'N/A'}</td>
+                                <td>{(stat.pricePerHour || 0).toLocaleString()} VNĐ/h</td>
+                                <td>{(stat.totalHours || 0).toLocaleString()}</td>
+                                <td>{(stat.totalRevenue || 0).toLocaleString()} VNĐ</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )
+                    )}
+                  </>
+                )}
                 <button className="admin-page-chart-toggle-button" onClick={handleShowChart}>
                   📊
                 </button>
@@ -1386,3 +1442,4 @@ const AdminPage = ({ onLogout }) => {
 };
 
 export default AdminPage;
+
