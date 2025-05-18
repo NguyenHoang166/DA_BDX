@@ -17,6 +17,7 @@ function ProfilePage({ user, setUser }) {
     isActive: user?.isActive !== undefined ? user.isActive : 1,
     isLocked: user?.isLocked !== undefined ? user.isLocked : 0,
     avatar: user?.avatar || defaultAvatar, // Maps to 'image' in DB
+    password: user?.password || 'defaultPassword', // Thêm trường password vào state
   });
   const fileInputRef = useRef(null);
 
@@ -47,16 +48,62 @@ function ProfilePage({ user, setUser }) {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    setUser((prevUser) => ({
-      ...prevUser,
-      username: profile.username,
-      email: profile.email,
-      phone: profile.phone,
-      avatar: profile.avatar,
-    }));
-    console.log('Thông tin đã được lưu:', profile);
+  const handleSave = async () => {
+    try {
+      // Gửi yêu cầu PUT tới API để cập nhật thông tin người dùng
+      const response = await fetch(`http://localhost:5000/api/user/${profile.username}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: profile.email,
+          password: profile.password, // Gửi mật khẩu từ state profile
+          role: profile.role,
+          image: profile.avatar,
+          phone: profile.phone,
+          isActive: profile.isActive,
+          isLocked: profile.isLocked,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Lỗi khi cập nhật thông tin');
+      }
+
+      // Cập nhật state user với dữ liệu từ API
+      setUser((prevUser) => ({
+        ...prevUser,
+        username: data.username,
+        email: data.email,
+        phone: data.phone,
+        avatar: data.image,
+        role: data.role,
+        isActive: data.isActive,
+        isLocked: data.isLocked,
+        password: profile.password, // Cập nhật mật khẩu vào state user
+      }));
+
+      // Đồng bộ lại state profile với dữ liệu từ API
+      setProfile((prevProfile) => ({
+        ...prevProfile,
+        username: data.username,
+        email: data.email,
+        phone: data.phone,
+        avatar: data.image,
+        role: data.role,
+        isActive: data.isActive,
+        isLocked: data.isLocked,
+      }));
+
+      setIsEditing(false);
+      alert('Cập nhật thông tin thành công!');
+    } catch (error) {
+      console.error('Lỗi khi lưu thông tin:', error);
+      alert(error.message || 'Đã xảy ra lỗi khi cập nhật thông tin');
+    }
   };
 
   const handleBack = () => {
@@ -116,6 +163,19 @@ function ProfilePage({ user, setUser }) {
               />
             ) : (
               <span>{profile.email}</span>
+            )}
+          </div>
+          <div className="profile-field">
+            <label>Mật khẩu:</label>
+            {isEditing ? (
+              <input
+                type="password"
+                name="password"
+                value={profile.password}
+                onChange={handleInputChange}
+              />
+            ) : (
+              <span>********</span>
             )}
           </div>
           <div className="profile-field">

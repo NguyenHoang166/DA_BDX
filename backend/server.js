@@ -5,6 +5,7 @@ const userRoutes = require('./routes/users');
 const feedbackRoutes = require('./routes/feedback');
 const payRoutes = require('./routes/pay');
 const statisticalRouter = require('./routes/statistical');
+const paymentRoutes = require('./routes/payment');
 require('dotenv').config();
 
 const app = express();
@@ -15,10 +16,11 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes); // Sửa từ usersRoutes thành userRoutes
+app.use('/api/user', userRoutes); 
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/thanh-toan', payRoutes);
 app.use('/api/statistics', statisticalRouter);
+app.use('/api/payment', paymentRoutes);
 
 // Khởi động server
 const PORT = process.env.PORT || 5000;

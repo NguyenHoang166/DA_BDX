@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Thêm người dùng mới
+// Thêm người dùng mới admin
 router.post('/', async (req, res) => {
   try {
     const { username, email, password, role, image, phone, isActive, isLocked, created_at } = req.body;
@@ -74,7 +74,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Cập nhật người dùng
+// Cập nhật người dùng admin
 router.put('/:username', async (req, res) => {
   try {
     const { username } = req.params;
@@ -86,7 +86,7 @@ router.put('/:username', async (req, res) => {
     }
 
     // Kiểm tra role hợp lệ
-    if (!['Admin', 'Người dùng'].includes(role)) {
+    if (role && !['Admin', 'Người dùng'].includes(role)) {
       return res.status(400).json({ error: 'Quyền không hợp lệ. Phải là "Admin" hoặc "Người dùng".' });
     }
 
@@ -95,11 +95,11 @@ router.put('/:username', async (req, res) => {
       [
         email,
         password,
-        role,
-        image || 'https://via.placeholder.com/50',
-        phone || null,
-        isActive ?? 1,
-        isLocked ?? 0,
+        role || (await db.query('SELECT role FROM users WHERE username = ?', [username]))[0][0].role,
+        image || (await db.query('SELECT image FROM users WHERE username = ?', [username]))[0][0].image,
+        phone || (await db.query('SELECT phone FROM users WHERE username = ?', [username]))[0][0].phone,
+        isActive !== undefined ? isActive : (await db.query('SELECT isActive FROM users WHERE username = ?', [username]))[0][0].isActive,
+        isLocked !== undefined ? isLocked : (await db.query('SELECT isLocked FROM users WHERE username = ?', [username]))[0][0].isLocked,
         username,
       ]
     );
@@ -108,14 +108,19 @@ router.put('/:username', async (req, res) => {
       return res.status(404).json({ error: 'Không tìm thấy người dùng' });
     }
 
-    res.status(200).json({ username, email, role, image, phone, isActive, isLocked });
+    const [updatedUser] = await db.query(
+      'SELECT username, email, role, image, phone, isActive, isLocked FROM users WHERE username = ?',
+      [username]
+    );
+
+    res.status(200).json(updatedUser[0]);
   } catch (err) {
     console.error('Lỗi khi cập nhật người dùng:', err);
     res.status(500).json({ error: 'Lỗi máy chủ khi cập nhật người dùng' });
   }
 });
 
-// Khóa/mở khóa người dùng
+// Khóa/mở khóa người dùng admin
 router.patch('/khoa/:username', async (req, res) => {
   try {
     const { username } = req.params;
@@ -141,7 +146,7 @@ router.patch('/khoa/:username', async (req, res) => {
   }
 });
 
-// Xóa người dùng
+// Xóa người dùng admin
 router.delete('/:username', async (req, res) => {
   try {
     const { username } = req.params;

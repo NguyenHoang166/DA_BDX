@@ -1,80 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import parkingLotImage from "../assets/image.png";
 import "./InvoicePage.css";
 
-// Mock data for payment history
-const paymentHistory = [
-  {
-    id: 1,
-    date: "2025-03-08 09:02:59",
-    amount: "2,000.00 VNĐ",
-    transactionType: "MOMO",
-    serviceType: "Gửi xe",
-    customerInfo: {
-      name: "Nguyeen Đức Hieu",
-      phone: "0362143902",
-      email: "quangnguyenqbi@gmail.com",
-      licensePlate: "32432432",
-    },
-    parkingInfo: {
-      name: "Bãi đậu Trung Tâm",
-      position: "A2",
-      vehicleType: "Xe máy",
-      startTime: "3/19/2025, 7:00:00 AM",
-      endTime: "3/19/2025, 2:00:00 PM",
-      duration: "7 giờ",
-      total: "70,000 VNĐ",
-    },
-  },
-  {
-    id: 2,
-    date: "2025-03-10 15:36:11",
-    amount: "2,000.00 VNĐ",
-    transactionType: "VNPay",
-    serviceType: "Gửi xe",
-    customerInfo: {
-      name: "Nguyeen Đức Hieu",
-      phone: "0362143902",
-      email: "quangnguyenqbi@gmail.com",
-      licensePlate: "32432432",
-    },
-    parkingInfo: {
-      name: "Bãi đậu Trung Tâm",
-      position: "A2",
-      vehicleType: "Xe máy",
-      startTime: "3/19/2025, 7:00:00 AM",
-      endTime: "3/19/2025, 2:00:00 PM",
-      duration: "7 giờ",
-      total: "70,000 VNĐ",
-    },
-  },
-  {
-    id: 3,
-    date: "2025-03-19 15:21:51",
-    amount: "2,000.00 VNĐ",
-    transactionType: "Tiền Mặt",
-    serviceType: "Gửi xe",
-    customerInfo: {
-      name: "Nguyeen Đức Hieu",
-      phone: "0362143902",
-      email: "quangnguyenqbi@gmail.com",
-      licensePlate: "32432432",
-    },
-    parkingInfo: {
-      name: "Bãi đậu Trung Tâm",
-      position: "A2",
-      vehicleType: "Xe máy",
-      startTime: "3/19/2025, 7:00:00 AM",
-      endTime: "3/19/2025, 2:00:00 PM",
-      duration: "7 giờ",
-      total: "70,000 VNĐ",
-    },
-  },
-];
-
 const InvoicePage = () => {
+  const [paymentHistory, setPaymentHistory] = useState([]);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+  // Gọi API khi component được render
+  useEffect(() => {
+    const fetchPaymentHistory = async () => {
+      try {
+        // Gọi API với URL chính xác của server backend
+        const response = await axios.get("http://localhost:5000/api/payment/payment-history");
+        setPaymentHistory(response.data); // Lưu dữ liệu từ API vào state
+      } catch (error) {
+        console.error("Lỗi khi gọi API lịch sử thanh toán:", error);
+      }
+    };
+
+    fetchPaymentHistory(); // Gọi hàm lấy dữ liệu
+  }, []); // Mảng rỗng để chỉ gọi API một lần khi component mount
 
   // Open details modal
   const openDetailsModal = (invoice) => {
