@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Thêm useNavigate
-import parkingLotImage from '../assets/image.png';
+import parkingLotImage from '../assets/image 1.png';
 import './CustomerPage.css';
 import Chatbox from '../components/Chatbox';
 

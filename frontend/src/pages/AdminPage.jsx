@@ -283,7 +283,7 @@ const AdminPage = ({ onLogout }) => {
     fetchFeedbacks();
     fetchTransactions();
 
-    const socket = new WebSocket('ws://192.168.1.81:81');
+    const socket = new WebSocket('ws://192.168.1.152:81');
     socket.onopen = () => console.log('Connected to ESP32 WebSocket');
     socket.onmessage = (event) => {
       try {

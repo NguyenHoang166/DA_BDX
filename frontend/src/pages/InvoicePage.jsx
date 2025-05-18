@@ -54,7 +54,7 @@ const InvoicePage = () => {
               <th>STT</th>
               <th>Ngày</th>
               <th>Số tiền</th>
-              <th>Loại Dịch vụ</th>
+              <th>Loại xe</th>
               <th>Chi tiết</th>
             </tr>
           </thead>

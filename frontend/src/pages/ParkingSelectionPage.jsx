@@ -58,7 +58,7 @@ export default function ParkingSelectionPage() {
 
   useEffect(() => {
     // Kết nối WebSocket với ESP32
-    const socket = new WebSocket("ws://192.168.1.115:81");
+    const socket = new WebSocket("ws://192.168.1.152:81");
 
     socket.onopen = () => {
       console.log("Connected to ESP32 WebSocket");
@@ -284,7 +284,7 @@ export default function ParkingSelectionPage() {
       return;
     }
 
-    const defaultQrCode = "http://192.168.1.81/enter";
+    const defaultQrCode = "http://192.168.1.152/enter";
     const newOrder = {
       id: orders.length + 1,
       customerInfo: { ...customerInfo },

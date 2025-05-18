@@ -58,7 +58,7 @@ function ProfilePage({ user, setUser }) {
         },
         body: JSON.stringify({
           email: profile.email,
-          password: profile.password, // Gửi mật khẩu từ state profile
+          password: profile.password,
           role: profile.role,
           image: profile.avatar,
           phone: profile.phone,
