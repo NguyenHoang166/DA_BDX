@@ -20,7 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes); 
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/thanh-toan', payRoutes);
-app.use('/api/statistical', statisticalRouter);
+app.use('/api/statistics', statisticalRouter);
 app.use('/api/payment', paymentRoutes);
 app.use('/chat', chatRoute);
 // Khởi động server

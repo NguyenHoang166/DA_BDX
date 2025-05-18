@@ -1442,4 +1442,3 @@ const AdminPage = ({ onLogout }) => {
 };
 
 export default AdminPage;
-
