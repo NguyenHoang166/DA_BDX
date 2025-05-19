@@ -92,7 +92,10 @@ export default function ParkingSelectionPage() {
       try {
         const parsedData = JSON.parse(storedData);
         setCurrentOrderId(parsedData.orderId);
-        setCustomerInfo(prev => ({ ...prev, licensePlate: parsedData.customerInfo.licensePlate }));
+        setCustomerInfo((prev) => ({
+          ...prev,
+          licensePlate: parsedData.customerInfo.licensePlate,
+        }));
         setSelectedLotForBooking(parsedData.selectedLotForBooking);
         setSelectedVehicleType(parsedData.selectedVehicleType);
         setSelectedPositions(parsedData.selectedPositions);
@@ -105,25 +108,6 @@ export default function ParkingSelectionPage() {
     }
 
     fetchUserInfo();
-
-    const handlePaymentResult = async () => {
-      if (window.location.pathname === "/payment-result") {
-        const urlParams = new URLSearchParams(window.location.search);
-        const vnpTxnRef = urlParams.get("vnp_TxnRef");
-        console.log('URL Params:', Object.fromEntries(urlParams));
-        if (vnpTxnRef) {
-          console.log('Detected return from VNPay with vnp_TxnRef:', vnpTxnRef);
-          setShowVNPayPaymentModal(true);
-          setIsProcessing(true);
-          await handleVNPayPaymentConfirmation();
-        } else {
-          setErrorMessage("Không tìm thấy mã giao dịch từ VNPay.");
-          setShowVNPayPaymentModal(false);
-        }
-      }
-    };
-
-    handlePaymentResult();
   }, []);
 
   useEffect(() => {
@@ -169,7 +153,10 @@ export default function ParkingSelectionPage() {
   const handleViewParkingLot = (lotId) => {
     if (lotId === espParkingLot.id) {
       setParkingSlots({
-        motorcycle: espSlots.map((slot) => ({ id: slot.id, isOccupied: slot.occupied })),
+        motorcycle: espSlots.map((slot) => ({
+          id: slot.id,
+          isOccupied: slot.occupied,
+        })),
         car: [],
         truck: [],
       });
@@ -250,7 +237,6 @@ export default function ParkingSelectionPage() {
   const closeVNPayPaymentModal = () => {
     setShowVNPayPaymentModal(false);
     setErrorMessage("");
-    window.history.replaceState(null, '', '/');
   };
 
   const closeOrderDetailsModal = () => {
@@ -354,11 +340,13 @@ export default function ParkingSelectionPage() {
       paymentMethod: selectedPaymentMethod,
       qrCode: defaultQrCode,
     };
-    setOrders([...orders, newOrder]);
-    setQrCode(defaultQrCode);
 
     if (selectedPaymentMethod === "vnpay") {
       try {
+        setShowCustomerInfoModal(false);
+        setShowVNPayPaymentModal(true);
+        setIsProcessing(true);
+
         const payload = {
           amount: newOrder.total,
           orderId: `ORDER_${newOrder.id}_${Date.now()}`,
@@ -387,22 +375,32 @@ export default function ParkingSelectionPage() {
         };
         localStorage.setItem("paymentData", JSON.stringify(paymentData));
 
-        console.log('Sending to backend:', payload);
-        const response = await axios.post("http://localhost:5000/api/payment/create-qr", payload);
-        console.log('Backend response:', response.data);
+        console.log("Sending to backend:", payload);
+        const response = await axios.post(
+          "http://localhost:5000/api/payment/create-qr",
+          payload
+        );
+        console.log("Backend response:", response.data);
 
         if (response.data.paymentUrl) {
-          setShowCustomerInfoModal(false);
+          setShowVNPayPaymentModal(false);
           window.location.href = response.data.paymentUrl;
         } else {
-          throw new Error('Không nhận được URL thanh toán từ backend');
+          throw new Error("Không nhận được URL thanh toán từ backend");
         }
       } catch (error) {
         console.error("Error creating payment URL:", error);
-        alert(`Không thể tạo URL thanh toán: ${error.response?.data?.details || error.message}`);
-        setShowCustomerInfoModal(false);
+        setErrorMessage(
+          `Không thể tạo URL thanh toán: ${
+            error.response?.data?.details || error.message
+          }`
+        );
+        setShowVNPayPaymentModal(false);
+        setIsProcessing(false);
       }
     } else {
+      setOrders([...orders, newOrder]);
+      setQrCode(defaultQrCode);
       setShowCustomerInfoModal(false);
       setShowOrderDetailsModal(true);
       sendOrderDetailsEmail(newOrder);
@@ -445,120 +443,21 @@ export default function ParkingSelectionPage() {
       );
   };
 
-  const handleVNPayPaymentConfirmation = async () => {
-    try {
-      console.log('Starting VNPay payment status check');
-      const urlParams = new URLSearchParams(window.location.search);
-      console.log('URL Params:', Object.fromEntries(urlParams));
-
-      const requiredParams = ['vnp_TxnRef', 'vnp_ResponseCode', 'vnp_TransactionStatus', 'vnp_Amount', 'vnp_PayDate'];
-      const missingParams = requiredParams.filter(param => !urlParams.has(param));
-      if (missingParams.length > 0) {
-        const errorMsg = `Thiếu tham số cần thiết: ${missingParams.join(', ')}`;
-        setErrorMessage(errorMsg);
-        alert(errorMsg);
-        setShowVNPayPaymentModal(false);
-        setIsProcessing(false);
-        window.history.replaceState(null, '', '/');
-        return;
-      }
-
-      const response = await axios.get("http://localhost:5000/api/payment/check-payment-vnpay", {
-        params: Object.fromEntries(urlParams),
-        timeout: 15000,
-      });
-
-      console.log('Backend response (check-payment-vnpay):', JSON.stringify(response.data, null, 2));
-
-      if (response.data.status === "success") {
-        const storedData = localStorage.getItem("paymentData");
-        if (!storedData) {
-          const errorMsg = "Không tìm thấy thông tin đơn hàng. Vui lòng thử lại.";
-          setErrorMessage(errorMsg);
-          alert(errorMsg);
-          setShowVNPayPaymentModal(false);
-          setIsProcessing(false);
-          window.history.replaceState(null, '', '/');
-          return;
-        }
-
-        let parsedData;
-        try {
-          parsedData = JSON.parse(storedData);
-          console.log('Data from localStorage:', parsedData);
-        } catch (parseError) {
-          console.error('Error parsing localStorage data:', parseError);
-          const errorMsg = "Dữ liệu đơn hàng không hợp lệ. Vui lòng thử lại.";
-          setErrorMessage(errorMsg);
-          alert(errorMsg);
-          setShowVNPayPaymentModal(false);
-          setIsProcessing(false);
-          window.history.replaceState(null, '', '/');
-          return;
-        }
-
-        setCustomerInfo(prev => ({ ...prev, licensePlate: parsedData.customerInfo.licensePlate }));
-        setSelectedLotForBooking(parsedData.selectedLotForBooking);
-        setSelectedVehicleType(parsedData.selectedVehicleType);
-        setSelectedPositions(parsedData.selectedPositions);
-        setStartDate(parsedData.startDate);
-        setEndDate(parsedData.endDate);
-
-        const duration = calculateDuration();
-        const newOrder = {
-          id: orders.length + 1,
-          customerInfo: { ...customerInfo, licensePlate: parsedData.customerInfo.licensePlate },
-          parkingLot: parsedData.selectedLotForBooking.name,
-          positions: parsedData.selectedPositions,
-          vehicleType: parsedData.selectedVehicleType,
-          startDate: new Date(parsedData.startDate).toLocaleString(),
-          endDate: new Date(parsedData.endDate).toLocaleString(),
-          duration,
-          total: parsedData.selectedLotForBooking.price * duration * parsedData.selectedPositions.length,
-          paymentMethod: "vnpay",
-          qrCode: "http://192.168.1.152/enter",
-        };
-
-        console.log('New order created:', newOrder);
-
-        setOrders(prevOrders => [...prevOrders, newOrder]);
-        setQrCode(newOrder.qrCode);
-
-        setShowVNPayPaymentModal(false);
-        setShowOrderDetailsModal(true);
-        sendOrderDetailsEmail(newOrder);
-        alert(`Thanh toán thành công! Hóa đơn đã được gửi đến email: ${customerInfo.email}`);
-
-        localStorage.removeItem("paymentData");
-        window.history.replaceState(null, '', '/');
-        console.log('Payment processing completed successfully');
-      } else {
-        const failMessage = response.data.message || "Thanh toán không thành công do lỗi không xác định.";
-        setErrorMessage(`Thanh toán thất bại: ${failMessage}`);
-        alert(`Thanh toán thất bại: ${failMessage}`);
-        setShowVNPayPaymentModal(false);
-        setIsProcessing(false);
-        window.history.replaceState(null, '', '/');
-        console.log('Payment failed:', failMessage);
-      }
-    } catch (error) {
-      console.error("Error checking payment status:", error);
-      const errorMsg = `Lỗi khi kiểm tra trạng thái thanh toán: ${error.response?.data?.message || error.message || 'Không xác định'}`;
-      setErrorMessage(errorMsg);
-      alert(errorMsg);
-      setShowVNPayPaymentModal(false);
-      setIsProcessing(false);
-      window.history.replaceState(null, '', '/');
-    }
-  };
-
   return (
     <div
       className="parking-selection-page"
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
       {errorMessage && (
-        <div className="error-message" style={{ color: "red", textAlign: "center", padding: "20px", marginTop: "20px" }}>
+        <div
+          className="error-message"
+          style={{
+            color: "red",
+            textAlign: "center",
+            padding: "20px",
+            marginTop: "20px",
+          }}
+        >
           {errorMessage}
         </div>
       )}
@@ -571,10 +470,16 @@ export default function ParkingSelectionPage() {
             <p className="parking-capacity">{lot.availableSlots} chỗ trống</p>
             <p className="parking-price">{lot.price.toLocaleString()} VNĐ/giờ</p>
             <div className="parking-buttons">
-              <button className="booking-btn" onClick={() => openBookingModal(lot)}>
+              <button
+                className="booking-btn"
+                onClick={() => openBookingModal(lot)}
+              >
                 Xem ngay
               </button>
-              <button className="review-btn" onClick={() => openReviewModal(lot)}>
+              <button
+                className="review-btn"
+                onClick={() => openReviewModal(lot)}
+              >
                 Đánh giá
               </button>
             </div>
@@ -598,7 +503,9 @@ export default function ParkingSelectionPage() {
               <div className="parking-description">
                 <h3>{selectedLotForBooking.name}</h3>
                 <p>Sức chứa: {selectedLotForBooking.availableSlots} chỗ</p>
-                <p>Giá: {selectedLotForBooking.price.toLocaleString()} VNĐ/giờ</p>
+                <p>
+                  Giá: {selectedLotForBooking.price.toLocaleString()} VNĐ/giờ
+                </p>
               </div>
             </div>
 
@@ -652,7 +559,9 @@ export default function ParkingSelectionPage() {
                       <div
                         key={position.id}
                         className={`position-slot ${
-                          selectedPositions.includes(position.id) ? "selected" : ""
+                          selectedPositions.includes(position.id)
+                            ? "selected"
+                            : ""
                         } ${position.isOccupied ? "occupied" : "available"}`}
                         onClick={() => handlePositionChange(position.id)}
                       >
@@ -670,7 +579,9 @@ export default function ParkingSelectionPage() {
               <div className="modal-section price-details">
                 <div className="price-row">
                   <span>Đơn giá</span>
-                  <span>{selectedLotForBooking.price.toLocaleString()} VNĐ/giờ</span>
+                  <span>
+                    {selectedLotForBooking.price.toLocaleString()} VNĐ/giờ
+                  </span>
                 </div>
                 <div className="price-row">
                   <span>Thời gian thuê</span>
@@ -683,7 +594,12 @@ export default function ParkingSelectionPage() {
                 <div className="price-row total">
                   <span>Tổng</span>
                   <span>
-                    {(selectedLotForBooking.price * calculateDuration() * selectedPositions.length).toLocaleString()} VNĐ
+                    {(
+                      selectedLotForBooking.price *
+                      calculateDuration() *
+                      selectedPositions.length
+                    ).toLocaleString()}{" "}
+                    VNĐ
                   </span>
                 </div>
               </div>
@@ -780,15 +696,29 @@ export default function ParkingSelectionPage() {
                 </div>
                 <div className="detail-row">
                   <span>Loại xe:</span>
-                  <span>{selectedVehicleType === "motorcycle" ? "Xe máy" : selectedVehicleType === "car" ? "Ô tô" : "Xe tải"}</span>
+                  <span>
+                    {selectedVehicleType === "motorcycle"
+                      ? "Xe máy"
+                      : selectedVehicleType === "car"
+                      ? "Ô tô"
+                      : "Xe tải"}
+                  </span>
                 </div>
                 <div className="detail-row">
                   <span>Thời gian bắt đầu:</span>
-                  <span>{new Date(startDate).toLocaleString("vi-VN", { hour12: false })}</span>
+                  <span>
+                    {new Date(startDate).toLocaleString("vi-VN", {
+                      hour12: false,
+                    })}
+                  </span>
                 </div>
                 <div className="detail-row">
                   <span>Thời gian kết thúc:</span>
-                  <span>{new Date(endDate).toLocaleString("vi-VN", { hour12: false })}</span>
+                  <span>
+                    {new Date(endDate).toLocaleString("vi-VN", {
+                      hour12: false,
+                    })}
+                  </span>
                 </div>
                 <div className="detail-row">
                   <span>Thời gian thuê:</span>
@@ -797,7 +727,12 @@ export default function ParkingSelectionPage() {
                 <div className="detail-row total">
                   <span>Tổng cộng:</span>
                   <span>
-                    {(selectedLotForBooking.price * calculateDuration() * selectedPositions.length).toLocaleString("vi-VN")} VND
+                    {(
+                      selectedLotForBooking.price *
+                      calculateDuration() *
+                      selectedPositions.length
+                    ).toLocaleString("vi-VN")}{" "}
+                    VND
                   </span>
                 </div>
               </div>
@@ -841,22 +776,29 @@ export default function ParkingSelectionPage() {
               <div className="pending-payment-message">
                 <h3>Đang xử lý thanh toán của bạn...</h3>
                 {isProcessing && (
-                  <div className="spinner" style={{ 
-                    border: "4px solid #f3f3f3", 
-                    borderTop: "4px solid #3498db", 
-                    borderRadius: "50%", 
-                    width: "30px", 
-                    height: "30px", 
-                    animation: "spin 1s linear infinite", 
-                    margin: "20px auto" 
-                  }}></div>
+                  <div
+                    className="spinner"
+                    style={{
+                      border: "4px solid #f3f3f3",
+                      borderTop: "4px solid #3498db",
+                      borderRadius: "50%",
+                      width: "30px",
+                      height: "30px",
+                      animation: "spin 1s linear infinite",
+                      margin: "20px auto",
+                    }}
+                  ></div>
                 )}
                 <p>Vui lòng chờ trong giây lát để nhận xác nhận.</p>
-                {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+                {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
               </div>
             </div>
             <div className="modal-buttons">
-              <button className="cancel-btn" onClick={closeVNPayPaymentModal} disabled={isProcessing}>
+              <button
+                className="cancel-btn"
+                onClick={closeVNPayPaymentModal}
+                disabled={isProcessing}
+              >
                 Hủy
               </button>
             </div>
@@ -907,7 +849,13 @@ export default function ParkingSelectionPage() {
                 </div>
                 <div className="detail-row">
                   <span>Loại xe:</span>
-                  <span>{selectedVehicleType === "motorcycle" ? "Xe máy" : selectedVehicleType === "car" ? "Ô tô" : "Xe tải"}</span>
+                  <span>
+                    {selectedVehicleType === "motorcycle"
+                      ? "Xe máy"
+                      : selectedVehicleType === "car"
+                      ? "Ô tô"
+                      : "Xe tải"}
+                  </span>
                 </div>
                 <div className="detail-row">
                   <span>Thời gian bắt đầu:</span>
@@ -924,7 +872,12 @@ export default function ParkingSelectionPage() {
                 <div className="detail-row total">
                   <span>Tổng cộng:</span>
                   <span>
-                    {(selectedLotForBooking.price * calculateDuration() * selectedPositions.length).toLocaleString()} VNĐ
+                    {(
+                      selectedLotForBooking.price *
+                      calculateDuration() *
+                      selectedPositions.length
+                    ).toLocaleString()}{" "}
+                    VNĐ
                   </span>
                 </div>
               </div>
@@ -935,7 +888,9 @@ export default function ParkingSelectionPage() {
               <div className="booking-details">
                 <div className="detail-row">
                   <span>Phương thức:</span>
-                  <span>{selectedPaymentMethod === "vnpay" ? "VNPay" : "Tiền mặt"}</span>
+                  <span>
+                    {selectedPaymentMethod === "vnpay" ? "VNPay" : "Tiền mặt"}
+                  </span>
                 </div>
               </div>
             </div>

@@ -13,6 +13,7 @@ import ProfilePage from './pages/ProfilePage';
 import ParkingSelectionPage from './pages/ParkingSelectionPage';
 import InvoicePage from './pages/InvoicePage';
 import AdminPage from './pages/AdminPage';
+import PaymentResultPage from './pages/PaymentResultPage'; // Thêm import
 
 function PrivateRoute({ children, isLoggedIn, role, allowedRole }) {
   console.log('PrivateRoute - isLoggedIn:', isLoggedIn, 'role:', role, 'allowedRole:', allowedRole);
@@ -143,13 +144,13 @@ function App() {
           },
         });
         const data = await response.json();
-        console.log('API /me response:', data); // Log để kiểm tra
+        console.log('API /me response:', data);
         if (response.ok) {
           const userData = {
             id: data.id,
             username: data.username,
             email: data.email,
-            role: data.role || 'Admin', // Đảm bảo role luôn có giá trị
+            role: data.role || 'Admin',
             phone: data.phone || '',
             image: data.image || defaultAvatar,
             isActive: data.isActive,
@@ -176,7 +177,7 @@ function App() {
 
   useEffect(() => {
     syncAuthState();
-  },);
+  }, []);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -186,7 +187,7 @@ function App() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  },);
+  }, []);
 
   const handleLogin = async (email, password, navigateFromLogin) => {
     try {
@@ -196,9 +197,9 @@ function App() {
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
-      console.log('Login API response:', data); // Log để kiểm tra
+      console.log('Login API response:', data);
       if (response.ok) {
-        const role = data.role || 'Người dùng'; // Đảm bảo role luôn có giá trị
+        const role = data.role || 'Người dùng';
         const username = data.username;
 
         const userData = {
@@ -263,12 +264,12 @@ function App() {
     setShowSupport(true);
   };
 
-  const showPromotionPopup = () => {
-    setShowPromotion(true);
-  };
-
   const closeSupportPopup = () => {
     setShowSupport(false);
+  };
+
+  const showPromotionPopup = () => {
+    setShowPromotion(true);
   };
 
   const closePromotionPopup = () => {
@@ -339,6 +340,7 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route path="/payment-result" element={<PaymentResultPage />} /> {/* Thêm route mới */}
       </Routes>
     </div>
   );
