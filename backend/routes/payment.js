@@ -30,15 +30,14 @@ router.get('/payment-history', async (req, res) => {
         tt.loai_xe AS serviceType,
         tt.phuong_thuc_thanh_toan AS transactionType,
         u.username AS customer_name,
-        u.user_id AS customer_id,
         u.phone AS customer_phone,
-        u.email AS customer_email,  
+        u.email AS customer_email,  -- Thêm dấu phẩy
         tt.bien_so AS license_plate,
         bd.ten_bai AS parking_name,
         tt.vi_tri AS parking_position,
         tt.loai_xe AS vehicle_type,
-        DATE_FORMAT(tt.thoi_gian_bat_dau, '%Y-%m-%dT%H:%i') AS start_time,
-        DATE_FORMAT(tt.thoi_gian_ket_thuc, '%Y-%m-%dT%H:%i') AS end_time,
+        DATE_FORMAT(tt.thoi_gian_bat_dau, '%m/%d/%Y, %h:%i:%s %p') AS start_time,
+        DATE_FORMAT(tt.thoi_gian_ket_thuc, '%m/%d/%Y, %h:%i:%s %p') AS end_time,
         CASE 
           WHEN TIMESTAMPDIFF(MINUTE, tt.thoi_gian_bat_dau, tt.thoi_gian_ket_thuc) >= 0 
           THEN CONCAT(
@@ -66,7 +65,6 @@ router.get('/payment-history', async (req, res) => {
       transactionType: row.transactionType || 'Chưa xác định',
       serviceType: row.serviceType || 'Chưa xác định',
       customerInfo: {
-        id: row.customer_id || 'Không rõ', // Add the customer_id field here
         name: row.customer_name || 'Không rõ',
         phone: row.customer_phone || 'Không rõ',
         email: row.customer_email || 'Không có email',  
@@ -89,6 +87,7 @@ router.get('/payment-history', async (req, res) => {
     res.status(500).json({ error: 'Lỗi máy chủ khi lấy lịch sử thanh toán', details: err.message });
   }
 });
+
 
 router.post('/create-qr', async (req, res) => {
   console.log('Đã nhận yêu cầu tạo URL thanh toán tại /create-qr');

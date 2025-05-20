@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import parkingAImage from "../assets/imagebai1.jpg";
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -129,7 +130,7 @@ const AdminPage = ({ onLogout }) => {
   const [espParkingLot, setEspParkingLot] = useState({
     id: 1,
     name: 'Bãi đỗ ESP32',
-    image: 'https://via.placeholder.com/150',
+    image: parkingAImage,
     availableSlots: 0,
     price: 5000,
   });
@@ -283,7 +284,7 @@ const AdminPage = ({ onLogout }) => {
     fetchFeedbacks();
     fetchTransactions();
 
-    const socket = new WebSocket('ws://192.168.1.152:81');
+    const socket = new WebSocket('ws://192.168.94.29:81');
     socket.onopen = () => console.log('Connected to ESP32 WebSocket');
     socket.onmessage = (event) => {
       try {
@@ -1404,7 +1405,7 @@ const AdminPage = ({ onLogout }) => {
                           <thead>
                             <tr>
                               <th>Loại xe</th>
-                              <th>Giá mỗi giờ</th>
+                              <th>tông</th>
                               <th>Tổng giờ thuê</th>
                               <th>Tổng tiền</th>
                             </tr>
@@ -1413,8 +1414,8 @@ const AdminPage = ({ onLogout }) => {
                             {statistics.parkingStats.map((stat, index) => (
                               <tr key={index}>
                                 <td>{stat.type || 'N/A'}</td>
-                                <td>{(stat.pricePerHour || 0).toLocaleString()} VNĐ/h</td>
-                                <td>{(stat.totalHours || 0).toLocaleString()}</td>
+                                <td>{(stat.pricePerHour || 0).toLocaleString()}</td>
+                                <td>{(stat.totalHours || 0).toLocaleString()}Giờ</td>
                                 <td>{(stat.totalRevenue || 0).toLocaleString()} VNĐ</td>
                               </tr>
                             ))}

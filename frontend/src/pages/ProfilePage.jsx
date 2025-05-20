@@ -8,7 +8,7 @@ function ProfilePage({ user, setUser }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    id: user?.id || 1,
+    id: user?.id || '',
     username: user?.username || 'nguyenhoang',
     email: user?.email || 'example@email.com',
     role: user?.role || 'Người dùng',
