@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Thêm useNavigate
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import parkingLotImage from '../assets/image 1.png';
 import './CustomerPage.css';
 import Chatbox from '../components/Chatbox';
@@ -8,7 +8,26 @@ function CustomerPage() {
   const [vehicleType, setVehicleType] = useState('Xe máy');
   const [startDate, setStartDate] = useState('2025-03-02T07:00');
   const [endDate, setEndDate] = useState('2025-03-02T13:00');
-  const navigate = useNavigate(); // Khởi tạo useNavigate
+  const [showPopup, setShowPopup] = useState(false); // Trạng thái cho popup
+  const navigate = useNavigate();
+
+  // Hàm kiểm tra thời gian quá giờ
+  const checkOverdue = () => {
+    const currentTime = new Date();
+    const endTime = new Date(endDate);
+    if (currentTime > endTime) {
+      console.log('Thời gian quá hạn!'); // Có thể thông báo qua console hoặc xử lý khác
+    }
+  };
+
+  // Sử dụng useEffect để kiểm tra thời gian định kỳ
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkOverdue();
+    }, 60000); // Kiểm tra mỗi phút (60000ms)
+
+    return () => clearInterval(interval); // Dọn dẹp interval khi component unmount
+  }, [endDate]);
 
   const handleBookNow = (selectedVehicleType = vehicleType) => {
     const bookingData = {
@@ -17,7 +36,7 @@ function CustomerPage() {
       endDate,
     };
     console.log('Navigating to /parking-selection with data:', bookingData);
-    navigate('/parking-selection', { state: bookingData }); // Điều hướng đến ParkingSelectionPage
+    navigate('/parking-selection', { state: bookingData });
   };
 
   const handleSubmit = (e) => {
@@ -25,6 +44,23 @@ function CustomerPage() {
     console.log('handleSubmit called');
     handleBookNow();
   };
+
+  // Hàm hiển thị/ẩn popup khi nhấn nút
+  const togglePopup = () => {
+    setShowPopup(!showPopup);
+  };
+
+  // Dữ liệu mẫu cho bảng
+  const transactionData = [
+    {
+      maGiaoDich: 'TX1002',
+      userId: 'USER#456',
+      thoiGianBatDau: '23/05/2025 03:00',
+      thoiGianKetThuc: '23/05/2025 03:29',
+      quaThoiGian: '1 tiếng',
+      phiThem: '10,500',
+    },
+  ];
 
   return (
     <div className="main-container">
@@ -145,6 +181,46 @@ function CustomerPage() {
           </button>
         </div>
       </div>
+
+      {/* Nút cảnh báo cố định */}
+      <button className="warning-btn" onClick={togglePopup}>
+        Cảnh báo
+      </button>
+
+      {/* Popup hiển thị bảng */}
+      {showPopup && (
+        <div className="transaction-popup">
+          <table className="transaction-table">
+            <thead>
+              <tr>
+               <th>Mã Giao Dịch</th>
+                      <th>User name</th>
+                      <th>Thời Gian Bắt Đầu</th>
+                      <th>Thời Gian Kết Thúc</th>
+                      <th>Thời Gian Ra Khỏi Bãi</th>
+                      <th>Tổng Giờ Đỗ</th>
+                      <th>Quá Giờ</th>
+                      <th>Phí Phạt (VNĐ)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactionData.map((item, index) => (
+                <tr key={index}>
+                  <td>{item.maGiaoDich}</td>
+                  <td>{item.userId}</td>
+                  <td>{item.thoiGianBatDau}</td>
+                  <td>{item.thoiGianKetThuc}</td>
+                  <td>{item.ghiChu}</td>
+                  <td>{item.phiThem}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button className="close-popup-btn" onClick={togglePopup}>
+            Đóng
+          </button>
+        </div>
+      )}
 
       {/* Thêm Chatbox */}
       <Chatbox />

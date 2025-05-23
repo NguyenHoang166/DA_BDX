@@ -16,7 +16,7 @@ import './AdminPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const API_BASE_URL = 'http://localhost:5000'; // URL backend
+const API_BASE_URL = 'http://localhost:5000';
 
 // Hàm gọi API với xử lý token và lỗi
 const fetchWithAuth = async (url, options = {}, navigate) => {
@@ -32,12 +32,9 @@ const fetchWithAuth = async (url, options = {}, navigate) => {
     ...options.headers,
   };
 
-  console.log(`Gọi API: ${url} với phương thức ${options.method || 'GET'}`);
   const response = await fetch(url, { ...options, headers });
 
-  if (response.status === 204) {
-    return null;
-  }
+  if (response.status === 204) return null;
 
   if (!response.ok) {
     let errorMessage = `Gọi API thất bại: ${response.status}`;
@@ -53,7 +50,6 @@ const fetchWithAuth = async (url, options = {}, navigate) => {
         errorMessage = error.error || error.message || errorMessage;
       } else {
         const text = await response.text();
-        console.error('Phản hồi không phải JSON:', text.slice(0, 100));
         errorMessage = `Phản hồi không hợp lệ: ${response.status} ${response.statusText}`;
       }
     } catch (e) {
@@ -64,6 +60,46 @@ const fetchWithAuth = async (url, options = {}, navigate) => {
 
   return response.json();
 };
+
+// Dữ liệu ảo cho chức năng cảnh báo quá giờ
+const mockTransactions = [
+  {
+    id: 1,
+    transactionCode: "TXN001",
+    customerName: "Nguyen Van A",
+    vehicleType: "Xe máy",
+    time: "2025-05-23T04:00:00", // 04:00 AM +07, 23/05/2025
+    exitTime: "2025-05-23T05:30:00", // 05:30 AM +07, 23/05/2025
+    amount: 15000,
+    paymentMethod: "Tiền mặt",
+    email: "nguyenvana@gmail.com",
+    phone: "0901234567",
+  },
+  {
+    id: 2,
+    transactionCode: "TXN002",
+    customerName: "Tran Thi B",
+    vehicleType: "Ô tô",
+    time: "2025-05-23T05:00:00", // 05:00 AM +07, 23/05/2025
+    exitTime: "2025-05-23T05:45:00", // 05:45 AM +07, 23/05/2025
+    amount: 30000,
+    paymentMethod: "Chuyển khoản",
+    email: "tranthib@gmail.com",
+    phone: "0912345678",
+  },
+  {
+    id: 3,
+    transactionCode: "TXN003",
+    customerName: "Le Van C",
+    vehicleType: "Xe tải",
+    time: "2025-05-23T03:30:00", // 03:30 AM +07, 23/05/2025
+    exitTime: "2025-05-23T05:15:00", // 05:15 AM +07, 23/05/2025
+    amount: 50000,
+    paymentMethod: "Tiền mặt",
+    email: "levanc@gmail.com",
+    phone: "0923456789",
+  },
+];
 
 const AdminPage = ({ onLogout }) => {
   const navigate = useNavigate();
@@ -82,6 +118,7 @@ const AdminPage = ({ onLogout }) => {
   const [showAddParkingLotForm, setShowAddParkingLotForm] = useState(false);
   const [showEditParkingLotForm, setShowEditParkingLotForm] = useState(false);
   const [editParkingLot, setEditParkingLot] = useState(null);
+  const [showOvertimePopup, setShowOvertimePopup] = useState(false);
   const [selectedParkingLot, setSelectedParkingLot] = useState(null);
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -136,6 +173,7 @@ const AdminPage = ({ onLogout }) => {
   });
   const [espSlots, setEspSlots] = useState([]);
   const [espEmptySlots, setEspEmptySlots] = useState(0);
+  const [overtimeWarnings, setOvertimeWarnings] = useState([]);
 
   const chartData = {
     labels: statistics.dailyData.map((item) => item.date || ''),
@@ -179,7 +217,6 @@ const AdminPage = ({ onLogout }) => {
       if (start && end) {
         url += `?startDate=${start}&endDate=${end}`;
       }
-      console.log(`Gọi API thống kê: ${url}`);
       const data = await fetchWithAuth(url, {}, navigate);
       if (!data || typeof data !== 'object') {
         throw new Error('Dữ liệu thống kê không hợp lệ.');
@@ -191,11 +228,56 @@ const AdminPage = ({ onLogout }) => {
         dailyData: Array.isArray(data.dailyData) ? data.dailyData : [],
       });
     } catch (err) {
-      console.error('Lỗi khi lấy dữ liệu thống kê:', err);
       setStatisticsError(err.message);
       alert(`Lỗi khi lấy dữ liệu thống kê: ${err.message}`);
     } finally {
       setStatisticsLoading(false);
+    }
+  };
+
+  const checkOvertime = () => {
+    const now = new Date(); // 06:25 AM +07, 23/05/2025
+    const overtimeTransactions = transactions.filter((transaction) => {
+      if (!transaction.time || !transaction.exitTime) return false;
+      const parkingTime = new Date(transaction.time);
+      const exitTime = new Date(transaction.exitTime);
+      const hoursDiff = (now - parkingTime) / (1000 * 60 * 60); // Tổng thời gian đỗ (giờ)
+      return hoursDiff > 0; // Lấy tất cả giao dịch có thời gian đỗ
+    });
+    setOvertimeWarnings(overtimeTransactions);
+  };
+
+  const sendOvertimeWarning = async (transaction) => {
+    try {
+      const now = new Date();
+      const startTime = new Date(transaction.time || now);
+      const endTime = new Date(transaction.time || now);
+      const exitTime = transaction.exitTime
+        ? new Date(transaction.exitTime)
+        : new Date(endTime.getTime() + 15 * 60 * 1000);
+      const overtimeMinutes = Math.max(0, Math.ceil((exitTime - endTime) / (1000 * 60)));
+      const overtimeHours = Math.ceil(overtimeMinutes / 60);
+      const penaltyFee = overtimeHours > 0 ? overtimeHours * 10000 : 0;
+
+      const warningData = {
+        transactionCode: transaction.transactionCode || 'N/A',
+        customerName: transaction.customerName || 'N/A',
+        overtimeMinutes: overtimeMinutes,
+        penaltyFee: penaltyFee,
+      };
+
+      await fetchWithAuth(
+        `${API_BASE_URL}/api/overtime-warning`,
+        {
+          method: 'POST',
+          body: JSON.stringify(warningData),
+        },
+        navigate
+      );
+
+      alert(`Đã gửi cảnh báo đến ${transaction.customerName || 'user'} thành công!`);
+    } catch (err) {
+      alert(`Lỗi khi gửi cảnh báo: ${err.message}`);
     }
   };
 
@@ -248,41 +330,12 @@ const AdminPage = ({ onLogout }) => {
       }
     };
 
-    const fetchTransactions = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        console.log('Bắt đầu gọi API thanh toán...');
-        const data = await fetchWithAuth(`${API_BASE_URL}/api/thanh-toan`, {}, navigate);
-        console.log('Dữ liệu API thanh toán:', data);
-        const mappedData = Array.isArray(data)
-          ? data.map((item) => ({
-              id: item.id || Math.random(),
-              transactionCode: item.ma_giao_dich || item.transactionCode || 'N/A',
-              customerName: item.username || item.ten_khach_hang || item.customerName || 'N/A',
-              vehicleType: item.loai_xe || item.vehicleType || 'N/A',
-              time: item.thoi_gian || item.time || 'N/A',
-              amount: item.so_tien || item.amount || 0,
-              paymentMethod:
-                item.phuong_thuc_thanh_toan || item.phuong_thuc || item.paymentMethod || 'N/A',
-              email: item.email || 'N/A',
-              phone: item.phone || item.so_dien_thoai || 'N/A',
-            }))
-          : [];
-        console.log('Dữ liệu thanh toán đã ánh xạ:', mappedData);
-        setTransactions(mappedData);
-      } catch (err) {
-        console.error('Lỗi khi gọi API thanh toán:', err);
-        setError(err.message);
-        alert(`Lỗi khi lấy danh sách giao dịch: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Sử dụng dữ liệu ảo
+    setTransactions(mockTransactions);
+    checkOvertime(); // Gọi ngay sau khi set transactions
 
     fetchUsers();
     fetchFeedbacks();
-    fetchTransactions();
 
     const socket = new WebSocket('ws://192.168.94.29:81');
     socket.onopen = () => console.log('Connected to ESP32 WebSocket');
@@ -307,6 +360,13 @@ const AdminPage = ({ onLogout }) => {
       fetchStatistics();
     }
   }, [showStatisticsPopup]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkOvertime();
+    }, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [transactions]);
 
   const handleLogout = () => {
     onLogout();
@@ -373,13 +433,10 @@ const AdminPage = ({ onLogout }) => {
       handleCloseAddAccountForm();
       alert('Thêm tài khoản thành công!');
     } catch (err) {
-      console.error('Lỗi khi thêm tài khoản:', err);
       if (err.message.includes('409')) {
         alert('Tên đăng nhập đã tồn tại!');
       } else if (err.message.includes('400')) {
         alert('Dữ liệu không hợp lệ. Vui lòng kiểm tra lại!');
-      } else if (err.message.includes('500')) {
-        alert('Lỗi máy chủ khi thêm tài khoản!');
       } else {
         alert(`Lỗi khi thêm tài khoản: ${err.message}`);
       }
@@ -433,7 +490,6 @@ const AdminPage = ({ onLogout }) => {
       );
       alert(`${updatedUser.isLocked ? 'Khóa' : 'Mở khóa'} tài khoản thành công!`);
     } catch (err) {
-      console.error('Lỗi khi khóa/mở khóa:', err);
       alert(`Lỗi khi khóa/mở khóa tài khoản: ${err.message}`);
     }
   };
@@ -441,29 +497,15 @@ const AdminPage = ({ onLogout }) => {
   const handleDeleteAccount = async (username) => {
     if (window.confirm('Bạn có chắc muốn xóa tài khoản này?')) {
       try {
-        const userExists = users.find((user) => user.username === username);
-        if (!userExists) {
-          alert('Tài khoản không tồn tại!');
-          return;
-        }
-
         await fetchWithAuth(
           `${API_BASE_URL}/api/user/${encodeURIComponent(username)}`,
           { method: 'DELETE' },
           navigate
         );
-
         setUsers(users.filter((user) => user.username !== username));
         alert('Xóa tài khoản thành công!');
       } catch (err) {
-        console.error('Lỗi khi xóa tài khoản:', err);
-        if (err.message.includes('404')) {
-          alert('Tài khoản không tồn tại để xóa!');
-        } else if (err.message.includes('500')) {
-          alert('Lỗi máy chủ khi xóa tài khoản!');
-        } else {
-          alert(`Lỗi khi xóa tài khoản: ${err.message}`);
-        }
+        alert(`Lỗi khi xóa tài khoản: ${err.message}`);
       }
     }
   };
@@ -593,6 +635,13 @@ const AdminPage = ({ onLogout }) => {
     }
   };
 
+  const handleShowOvertimePopup = () => {
+    checkOvertime(); // Gọi ngay để cập nhật overtimeWarnings
+    setShowOvertimePopup(true);
+  };
+
+  const handleCloseOvertimePopup = () => setShowOvertimePopup(false);
+
   const renderStars = (rating) => {
     const numRating = typeof rating === 'number' ? rating : 0;
     const stars = [];
@@ -610,6 +659,86 @@ const AdminPage = ({ onLogout }) => {
     const allParkingLots = [...parkingLots, espParkingLot];
     const parkingLot = allParkingLots.find((lot) => lot.id === parkingLotId);
     return parkingLot ? parkingLot.name : 'Không xác định';
+  };
+
+  const renderOvertimeWarnings = () => {
+    if (overtimeWarnings.length === 0) {
+      return null;
+    }
+
+    const now = new Date(); // 06:25 AM +07, 23/05/2025
+
+    return (
+      <>
+        {showOvertimePopup && (
+          <div className="admin-page-statistics-popup-overlay">
+            <div className="admin-page-statistics-popup">
+              <div className="admin-page-statistics-header">
+                <h3>Cảnh Báo Quá Giờ</h3>
+                <button className="admin-page-close-button" onClick={handleCloseOvertimePopup}>
+                  Đóng
+                </button>
+              </div>
+              <div className="admin-page-stats-table-container">
+                <table className="admin-page-stats-table">
+                  <thead>
+                    <tr>
+                      <th>Mã Giao Dịch</th>
+                      <th>User name</th>
+                      <th>Thời Gian Bắt Đầu</th>
+                      <th>Thời Gian Kết Thúc</th>
+                      <th>Thời Gian Ra Khỏi Bãi</th>
+                      <th>Tổng Giờ Đỗ</th>
+                      <th>Quá Giờ</th>
+                      <th>Phí Phạt (VNĐ)</th>
+                      <th>Cảnh Báo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {overtimeWarnings.map((transaction) => {
+                      const startTime = new Date(transaction.time || now);
+                      const endTime = new Date(transaction.time || now);
+                      const exitTime = transaction.exitTime
+                        ? new Date(transaction.exitTime)
+                        : new Date(endTime.getTime() + 15 * 60 * 1000);
+                      const totalHours = (now - startTime) / (1000 * 60 * 60);
+                      const overtimeMinutes = Math.max(0, Math.ceil((exitTime - endTime) / (1000 * 60)));
+                      const overtimeHours = Math.ceil(overtimeMinutes / 60);
+                      const penaltyFee = overtimeHours > 0 ? overtimeHours * 10000 : 0;
+
+                      return (
+                        <tr key={transaction.transactionCode || transaction.id}>
+                          <td>{transaction.transactionCode || 'N/A'}</td>
+                          <td>{transaction.customerName || 'N/A'}</td>
+                          <td>{startTime.toLocaleString()}</td>
+                          <td>{endTime.toLocaleString()}</td>
+                          <td>{exitTime.toLocaleString()}</td>
+                          <td style={{ color: totalHours > 0 ? 'red' : 'black' }}>
+                            {totalHours.toFixed(1)} giờ
+                          </td>
+                          <td style={{ color: overtimeMinutes > 0 ? 'red' : 'black' }}>
+                            {overtimeMinutes > 0 ? `${overtimeMinutes} phút` : '0 phút'}
+                          </td>
+                          <td>{penaltyFee.toLocaleString()} đ</td>
+                          <td>
+                            <button
+                              className="extend-button"
+                              onClick={() => sendOvertimeWarning(transaction)}
+                            >
+                              Cảnh Báo
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
   };
 
   return (
@@ -669,7 +798,14 @@ const AdminPage = ({ onLogout }) => {
               Thống Kê
             </button>
           </div>
+          <div className="function-item">
+            <button className="function-button" onClick={handleShowOvertimePopup}>
+              Cảnh Báo Quá Giờ
+            </button>
+          </div>
         </div>
+
+        {renderOvertimeWarnings()}
 
         {showAccountForm && (
           <div className="account-form">
@@ -968,7 +1104,6 @@ const AdminPage = ({ onLogout }) => {
               </div>
             </div>
             <div className="table-container">
-              {console.log('Render payment form:', { loading, error, transactions })}
               {loading && <p>Đang tải danh sách giao dịch...</p>}
               {error && <p className="error">Lỗi: {error}</p>}
               {!loading && !error && transactions.length === 0 && <p>Không có giao dịch nào.</p>}
@@ -1362,10 +1497,7 @@ const AdminPage = ({ onLogout }) => {
                     Tìm kiếm
                   </button>
                   <button className="admin-page-export-button">Xuất Excel</button>
-                  <button
-                    className="admin-page-close-button"
-                    onClick={handleCloseStatisticsPopup}
-                  >
+                  <button className="admin-page-close-button" onClick={handleCloseStatisticsPopup}>
                     Đóng
                   </button>
                 </div>
@@ -1405,7 +1537,7 @@ const AdminPage = ({ onLogout }) => {
                           <thead>
                             <tr>
                               <th>Loại xe</th>
-                              <th>tông</th>
+                              <th>Tổng</th>
                               <th>Tổng giờ thuê</th>
                               <th>Tổng tiền</th>
                             </tr>
@@ -1415,7 +1547,7 @@ const AdminPage = ({ onLogout }) => {
                               <tr key={index}>
                                 <td>{stat.type || 'N/A'}</td>
                                 <td>{(stat.pricePerHour || 0).toLocaleString()}</td>
-                                <td>{(stat.totalHours || 0).toLocaleString()}Giờ</td>
+                                <td>{(stat.totalHours || 0).toLocaleString()} Giờ</td>
                                 <td>{(stat.totalRevenue || 0).toLocaleString()} VNĐ</td>
                               </tr>
                             ))}

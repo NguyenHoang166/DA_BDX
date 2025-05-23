@@ -246,3 +246,99 @@
   font-size: 14px;
   width: 100%;
 }
+/* CSS cho popup */
+/* Nút cảnh báo cố định */
+.warning-btn {
+  position: fixed;
+  bottom: 20px; /* Cách đáy 20px */
+  left: 20px; /* Cách trái 20px */
+  background-color: #ff4444; /* Màu đỏ cảnh báo */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 50px; /* Bo tròn nút */
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  z-index: 1000; /* Đảm bảo nút nằm trên các thành phần khác */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s;
+}
+
+.warning-btn:hover {
+  background-color: #cc0000; /* Màu đỏ đậm hơn khi hover */
+}
+
+/* Nút cảnh báo cố định */
+.warning-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s;
+}
+
+.warning-btn:hover {
+  background-color: #cc0000;
+}
+
+/* Popup hiển thị bảng */
+.transaction-popup {
+  position: fixed;
+  bottom: 80px;
+  left: 20px;
+  background-color: rgba(255, 255, 255, 0.521);
+  color: black;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  max-width: 800px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.transaction-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.transaction-table th,
+.transaction-table td {
+  border: 1px solid #dddddd96;
+  padding: 8px;
+  text-align: left;
+}
+
+.transaction-table th {
+  background-color: #f2f2f280;
+  font-weight: bold;
+}
+
+.transaction-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.close-popup-btn {
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.close-popup-btn:hover {
+  background-color: #cc0000;
+}
