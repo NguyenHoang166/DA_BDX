@@ -993,7 +993,7 @@
 .payment-form-modal {
   position: fixed;
   top: 50%;
-  left: 50%;
+  left: 60%;
   transform: translate(-50%, -50%);
   background: rgba(255, 255, 255, 0.726);
   padding: 20px;
@@ -1212,4 +1212,87 @@
 
 .extend-button:hover {
   background: #0056b3;
+}
+.warning-form {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 80%;
+  max-width: 900px;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.warning-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.warning-form-header h3 {
+  margin: 0;
+  font-size: 1.5em;
+  color: #333;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.search-input {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.close-button {
+  padding: 5px 15px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  background-color: #c82333;
+}
+
+.table-container {
+  margin-top: 10px;
+}
+
+.warning-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.warning-table th,
+.warning-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.warning-table th {
+  background-color: #f8f9fa;
+  color: #333;
+}
+
+.warning-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+.warning-table tr:nth-child(even) {
+  background-color: #f9f9f9;
 }

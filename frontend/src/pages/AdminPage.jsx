@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import parkingAImage from "../assets/imagebai1.jpg";
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -12,16 +11,18 @@ import {
   Legend,
 } from 'chart.js';
 import backgroundImage from '../assets/image.png';
+import parkingAImage from '../assets/imagebai1.jpg';
 import './AdminPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'http://localhost:5000'; // URL backend
 
 // Hàm gọi API với xử lý token và lỗi
 const fetchWithAuth = async (url, options = {}, navigate) => {
   const token = localStorage.getItem('token');
   if (!token) {
+    console.warn('Không tìm thấy token, chuyển hướng đến trang đăng nhập.');
     if (navigate) navigate('/login');
     throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
   }
@@ -32,16 +33,27 @@ const fetchWithAuth = async (url, options = {}, navigate) => {
     ...options.headers,
   };
 
+  console.log(`[API CALL] Gọi API: ${url}`);
+  console.log(`[API CALL] Phương thức: ${options.method || 'GET'}`);
+  console.log(`[API CALL] Headers:`, headers);
+  if (options.body) {
+    console.log(`[API CALL] Body:`, options.body);
+  }
+
   const response = await fetch(url, { ...options, headers });
 
-  if (response.status === 204) return null;
+  if (response.status === 204) {
+    console.log('[API RESPONSE] Phản hồi 204 - Không có nội dung.');
+    return null;
+  }
 
   if (!response.ok) {
-    let errorMessage = `Gọi API thất bại: ${response.status}`;
+    let errorMessage = `[API ERROR] Gọi API thất bại: ${response.status} ${response.statusText}`;
     if (response.status === 401) {
+      console.warn('[API ERROR] Token không hợp lệ hoặc hết hạn, chuyển hướng đến trang đăng nhập.');
       localStorage.removeItem('token');
       if (navigate) navigate('/login');
-      throw new Error('Token không hợp lệ hoặc hết hạn. Vui lòng đăng nhập lại.');
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
     }
     try {
       const contentType = response.headers.get('content-type');
@@ -50,56 +62,19 @@ const fetchWithAuth = async (url, options = {}, navigate) => {
         errorMessage = error.error || error.message || errorMessage;
       } else {
         const text = await response.text();
-        errorMessage = `Phản hồi không hợp lệ: ${response.status} ${response.statusText}`;
+        console.error('[API ERROR] Phản hồi không phải JSON:', text.slice(0, 100));
+        errorMessage = `[API ERROR] Phản hồi không hợp lệ: ${response.status} ${response.statusText}`;
       }
     } catch (e) {
-      console.error('Lỗi khi parse phản hồi:', e);
+      console.error('[API ERROR] Lỗi khi parse phản hồi:', e);
     }
     throw new Error(errorMessage);
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log(`[API RESPONSE] Dữ liệu trả về từ ${url}:`, data);
+  return data;
 };
-
-// Dữ liệu ảo cho chức năng cảnh báo quá giờ
-const mockTransactions = [
-  {
-    id: 1,
-    transactionCode: "TXN001",
-    customerName: "Nguyen Van A",
-    vehicleType: "Xe máy",
-    time: "2025-05-23T04:00:00", // 04:00 AM +07, 23/05/2025
-    exitTime: "2025-05-23T05:30:00", // 05:30 AM +07, 23/05/2025
-    amount: 15000,
-    paymentMethod: "Tiền mặt",
-    email: "nguyenvana@gmail.com",
-    phone: "0901234567",
-  },
-  {
-    id: 2,
-    transactionCode: "TXN002",
-    customerName: "Tran Thi B",
-    vehicleType: "Ô tô",
-    time: "2025-05-23T05:00:00", // 05:00 AM +07, 23/05/2025
-    exitTime: "2025-05-23T05:45:00", // 05:45 AM +07, 23/05/2025
-    amount: 30000,
-    paymentMethod: "Chuyển khoản",
-    email: "tranthib@gmail.com",
-    phone: "0912345678",
-  },
-  {
-    id: 3,
-    transactionCode: "TXN003",
-    customerName: "Le Van C",
-    vehicleType: "Xe tải",
-    time: "2025-05-23T03:30:00", // 03:30 AM +07, 23/05/2025
-    exitTime: "2025-05-23T05:15:00", // 05:15 AM +07, 23/05/2025
-    amount: 50000,
-    paymentMethod: "Tiền mặt",
-    email: "levanc@gmail.com",
-    phone: "0923456789",
-  },
-];
 
 const AdminPage = ({ onLogout }) => {
   const navigate = useNavigate();
@@ -118,7 +93,6 @@ const AdminPage = ({ onLogout }) => {
   const [showAddParkingLotForm, setShowAddParkingLotForm] = useState(false);
   const [showEditParkingLotForm, setShowEditParkingLotForm] = useState(false);
   const [editParkingLot, setEditParkingLot] = useState(null);
-  const [showOvertimePopup, setShowOvertimePopup] = useState(false);
   const [selectedParkingLot, setSelectedParkingLot] = useState(null);
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -173,7 +147,11 @@ const AdminPage = ({ onLogout }) => {
   });
   const [espSlots, setEspSlots] = useState([]);
   const [espEmptySlots, setEspEmptySlots] = useState(0);
-  const [overtimeWarnings, setOvertimeWarnings] = useState([]);
+  const [showWarningForm, setShowWarningForm] = useState(false);
+  const [warnings, setWarnings] = useState([]);
+  const [warningLoading, setWarningLoading] = useState(false);
+  const [warningError, setWarningError] = useState(null);
+  const [warningSearchTerm, setWarningSearchTerm] = useState('');
 
   const chartData = {
     labels: statistics.dailyData.map((item) => item.date || ''),
@@ -214,9 +192,10 @@ const AdminPage = ({ onLogout }) => {
     setStatisticsError(null);
     try {
       let url = `${API_BASE_URL}/api/statistics`;
-      if (start && end) {
-        url += `?startDate=${start}&endDate=${end}`;
-      }
+if (start && end) {
+  url += `?startDate=${start}&endDate=${end}`;
+}
+      console.log(`[FETCH STATISTICS] Gọi API thống kê: ${url}`);
       const data = await fetchWithAuth(url, {}, navigate);
       if (!data || typeof data !== 'object') {
         throw new Error('Dữ liệu thống kê không hợp lệ.');
@@ -228,6 +207,7 @@ const AdminPage = ({ onLogout }) => {
         dailyData: Array.isArray(data.dailyData) ? data.dailyData : [],
       });
     } catch (err) {
+      console.error('[FETCH STATISTICS] Lỗi khi lấy dữ liệu thống kê:', err);
       setStatisticsError(err.message);
       alert(`Lỗi khi lấy dữ liệu thống kê: ${err.message}`);
     } finally {
@@ -235,49 +215,28 @@ const AdminPage = ({ onLogout }) => {
     }
   };
 
-  const checkOvertime = () => {
-    const now = new Date(); // 06:25 AM +07, 23/05/2025
-    const overtimeTransactions = transactions.filter((transaction) => {
-      if (!transaction.time || !transaction.exitTime) return false;
-      const parkingTime = new Date(transaction.time);
-      const exitTime = new Date(transaction.exitTime);
-      const hoursDiff = (now - parkingTime) / (1000 * 60 * 60); // Tổng thời gian đỗ (giờ)
-      return hoursDiff > 0; // Lấy tất cả giao dịch có thời gian đỗ
-    });
-    setOvertimeWarnings(overtimeTransactions);
-  };
-
-  const sendOvertimeWarning = async (transaction) => {
+  const fetchWarnings = async () => {
+    setWarningLoading(true);
+    setWarningError(null);
     try {
-      const now = new Date();
-      const startTime = new Date(transaction.time || now);
-      const endTime = new Date(transaction.time || now);
-      const exitTime = transaction.exitTime
-        ? new Date(transaction.exitTime)
-        : new Date(endTime.getTime() + 15 * 60 * 1000);
-      const overtimeMinutes = Math.max(0, Math.ceil((exitTime - endTime) / (1000 * 60)));
-      const overtimeHours = Math.ceil(overtimeMinutes / 60);
-      const penaltyFee = overtimeHours > 0 ? overtimeHours * 10000 : 0;
+      console.log('[FETCH WARNINGS] Bắt đầu kiểm tra cảnh báo...');
+      const checkResponse = await fetchWithAuth(`${API_BASE_URL}/api/canh-bao/check-canh-bao`, {}, navigate);
+      console.log('[FETCH WARNINGS] Kết quả kiểm tra cảnh báo:', checkResponse);
 
-      const warningData = {
-        transactionCode: transaction.transactionCode || 'N/A',
-        customerName: transaction.customerName || 'N/A',
-        overtimeMinutes: overtimeMinutes,
-        penaltyFee: penaltyFee,
-      };
+      console.log('[FETCH WARNINGS] Bắt đầu lấy danh sách cảnh báo...');
+      const data = await fetchWithAuth(`${API_BASE_URL}/api/canh-bao`, {}, navigate); // Sửa đường dẫn
+      console.log('[FETCH WARNINGS] Danh sách cảnh báo:', data);
 
-      await fetchWithAuth(
-        `${API_BASE_URL}/api/overtime-warning`,
-        {
-          method: 'POST',
-          body: JSON.stringify(warningData),
-        },
-        navigate
-      );
-
-      alert(`Đã gửi cảnh báo đến ${transaction.customerName || 'user'} thành công!`);
+      if (!Array.isArray(data)) {
+        throw new Error('Dữ liệu cảnh báo không hợp lệ, không phải mảng.');
+      }
+      setWarnings(data);
     } catch (err) {
-      alert(`Lỗi khi gửi cảnh báo: ${err.message}`);
+      console.error('[FETCH WARNINGS] Lỗi khi lấy danh sách cảnh báo:', err);
+      setWarningError(err.message);
+      alert(`Lỗi khi lấy danh sách cảnh báo: ${err.message}`);
+    } finally {
+      setWarningLoading(false);
     }
   };
 
@@ -330,15 +289,44 @@ const AdminPage = ({ onLogout }) => {
       }
     };
 
-    // Sử dụng dữ liệu ảo
-    setTransactions(mockTransactions);
-    checkOvertime(); // Gọi ngay sau khi set transactions
+    const fetchTransactions = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log('[FETCH TRANSACTIONS] Bắt đầu gọi API thanh toán...');
+        const data = await fetchWithAuth(`${API_BASE_URL}/api/thanh-toan`, {}, navigate);
+        console.log('[FETCH TRANSACTIONS] Dữ liệu API thanh toán:', data);
+        const mappedData = Array.isArray(data)
+          ? data.map((item) => ({
+              id: item.id || Math.random(),
+              transactionCode: item.ma_giao_dich || item.transactionCode || 'N/A',
+              customerName: item.username || item.ten_khach_hang || item.customerName || 'N/A',
+              vehicleType: item.loai_xe || item.vehicleType || 'N/A',
+              time: item.thoi_gian || item.time || 'N/A',
+              amount: item.so_tien || item.amount || 0,
+              paymentMethod:
+                item.phuong_thuc_thanh_toan || item.phuong_thuc || item.paymentMethod || 'N/A',
+              email: item.email || 'N/A',
+              phone: item.phone || item.so_dien_thoai || 'N/A',
+            }))
+          : [];
+        console.log('[FETCH TRANSACTIONS] Dữ liệu thanh toán đã ánh xạ:', mappedData);
+        setTransactions(mappedData);
+      } catch (err) {
+        console.error('[FETCH TRANSACTIONS] Lỗi khi gọi API thanh toán:', err);
+        setError(err.message);
+        alert(`Lỗi khi lấy danh sách giao dịch: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchUsers();
     fetchFeedbacks();
+    fetchTransactions();
 
-    const socket = new WebSocket('ws://192.168.94.29:81');
-    socket.onopen = () => console.log('Connected to ESP32 WebSocket');
+    const socket = new WebSocket('ws://192.168.1.152:81');
+    socket.onopen = () => console.log('[WEBSOCKET] Connected to ESP32 WebSocket');
     socket.onmessage = (event) => {
       try {
         const parsedData = JSON.parse(event.data);
@@ -346,11 +334,11 @@ const AdminPage = ({ onLogout }) => {
         setEspEmptySlots(parsedData.emptySlots || 0);
         setEspParkingLot((prev) => ({ ...prev, availableSlots: parsedData.emptySlots || 0 }));
       } catch (e) {
-        console.error('Lỗi khi parse dữ liệu WebSocket:', e);
+        console.error('[WEBSOCKET] Lỗi khi parse dữ liệu WebSocket:', e);
       }
     };
-    socket.onerror = (error) => console.error('WebSocket error:', error);
-    socket.onclose = () => console.log('Disconnected from ESP32 WebSocket');
+    socket.onerror = (error) => console.error('[WEBSOCKET] WebSocket error:', error);
+    socket.onclose = () => console.log('[WEBSOCKET] Disconnected from ESP32 WebSocket');
 
     return () => socket.close();
   }, [navigate]);
@@ -362,11 +350,10 @@ const AdminPage = ({ onLogout }) => {
   }, [showStatisticsPopup]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      checkOvertime();
-    }, 60 * 1000);
-    return () => clearInterval(interval);
-  }, [transactions]);
+    if (showWarningForm) {
+      fetchWarnings();
+    }
+  }, [showWarningForm]);
 
   const handleLogout = () => {
     onLogout();
@@ -399,13 +386,13 @@ const AdminPage = ({ onLogout }) => {
     });
   };
 
-  const handleImageChange = (e, setFunction, obj) => {
-    const file = e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setFunction({ ...obj, image: imageUrl });
-    }
-  };
+const handleImageChange = (e, setFunction, obj) => {
+  const file = e.target.files[0];
+  if (file) {
+    const imageUrl = URL.createObjectURL(file);
+    setFunction({ ...obj, image: imageUrl });
+  }
+};
 
   const handleAddAccount = async (e) => {
     e.preventDefault();
@@ -433,10 +420,13 @@ const AdminPage = ({ onLogout }) => {
       handleCloseAddAccountForm();
       alert('Thêm tài khoản thành công!');
     } catch (err) {
+      console.error('[ADD ACCOUNT] Lỗi khi thêm tài khoản:', err);
       if (err.message.includes('409')) {
         alert('Tên đăng nhập đã tồn tại!');
       } else if (err.message.includes('400')) {
         alert('Dữ liệu không hợp lệ. Vui lòng kiểm tra lại!');
+      } else if (err.message.includes('500')) {
+        alert('Lỗi máy chủ khi thêm tài khoản!');
       } else {
         alert(`Lỗi khi thêm tài khoản: ${err.message}`);
       }
@@ -490,6 +480,7 @@ const AdminPage = ({ onLogout }) => {
       );
       alert(`${updatedUser.isLocked ? 'Khóa' : 'Mở khóa'} tài khoản thành công!`);
     } catch (err) {
+      console.error('[LOCK ACCOUNT] Lỗi khi khóa/mở khóa:', err);
       alert(`Lỗi khi khóa/mở khóa tài khoản: ${err.message}`);
     }
   };
@@ -497,15 +488,29 @@ const AdminPage = ({ onLogout }) => {
   const handleDeleteAccount = async (username) => {
     if (window.confirm('Bạn có chắc muốn xóa tài khoản này?')) {
       try {
+        const userExists = users.find((user) => user.username === username);
+        if (!userExists) {
+          alert('Tài khoản không tồn tại!');
+          return;
+        }
+
         await fetchWithAuth(
           `${API_BASE_URL}/api/user/${encodeURIComponent(username)}`,
           { method: 'DELETE' },
           navigate
         );
+
         setUsers(users.filter((user) => user.username !== username));
         alert('Xóa tài khoản thành công!');
       } catch (err) {
-        alert(`Lỗi khi xóa tài khoản: ${err.message}`);
+        console.error('[DELETE ACCOUNT] Lỗi khi xóa tài khoản:', err);
+        if (err.message.includes('404')) {
+          alert('Tài khoản không tồn tại để xóa!');
+        } else if (err.message.includes('500')) {
+          alert('Lỗi máy chủ khi xóa tài khoản!');
+        } else {
+          alert(`Lỗi khi xóa tài khoản: ${err.message}`);
+        }
       }
     }
   };
@@ -635,13 +640,6 @@ const AdminPage = ({ onLogout }) => {
     }
   };
 
-  const handleShowOvertimePopup = () => {
-    checkOvertime(); // Gọi ngay để cập nhật overtimeWarnings
-    setShowOvertimePopup(true);
-  };
-
-  const handleCloseOvertimePopup = () => setShowOvertimePopup(false);
-
   const renderStars = (rating) => {
     const numRating = typeof rating === 'number' ? rating : 0;
     const stars = [];
@@ -661,85 +659,18 @@ const AdminPage = ({ onLogout }) => {
     return parkingLot ? parkingLot.name : 'Không xác định';
   };
 
-  const renderOvertimeWarnings = () => {
-    if (overtimeWarnings.length === 0) {
-      return null;
-    }
-
-    const now = new Date(); // 06:25 AM +07, 23/05/2025
-
-    return (
-      <>
-        {showOvertimePopup && (
-          <div className="admin-page-statistics-popup-overlay">
-            <div className="admin-page-statistics-popup">
-              <div className="admin-page-statistics-header">
-                <h3>Cảnh Báo Quá Giờ</h3>
-                <button className="admin-page-close-button" onClick={handleCloseOvertimePopup}>
-                  Đóng
-                </button>
-              </div>
-              <div className="admin-page-stats-table-container">
-                <table className="admin-page-stats-table">
-                  <thead>
-                    <tr>
-                      <th>Mã Giao Dịch</th>
-                      <th>User name</th>
-                      <th>Thời Gian Bắt Đầu</th>
-                      <th>Thời Gian Kết Thúc</th>
-                      <th>Thời Gian Ra Khỏi Bãi</th>
-                      <th>Tổng Giờ Đỗ</th>
-                      <th>Quá Giờ</th>
-                      <th>Phí Phạt (VNĐ)</th>
-                      <th>Cảnh Báo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overtimeWarnings.map((transaction) => {
-                      const startTime = new Date(transaction.time || now);
-                      const endTime = new Date(transaction.time || now);
-                      const exitTime = transaction.exitTime
-                        ? new Date(transaction.exitTime)
-                        : new Date(endTime.getTime() + 15 * 60 * 1000);
-                      const totalHours = (now - startTime) / (1000 * 60 * 60);
-                      const overtimeMinutes = Math.max(0, Math.ceil((exitTime - endTime) / (1000 * 60)));
-                      const overtimeHours = Math.ceil(overtimeMinutes / 60);
-                      const penaltyFee = overtimeHours > 0 ? overtimeHours * 10000 : 0;
-
-                      return (
-                        <tr key={transaction.transactionCode || transaction.id}>
-                          <td>{transaction.transactionCode || 'N/A'}</td>
-                          <td>{transaction.customerName || 'N/A'}</td>
-                          <td>{startTime.toLocaleString()}</td>
-                          <td>{endTime.toLocaleString()}</td>
-                          <td>{exitTime.toLocaleString()}</td>
-                          <td style={{ color: totalHours > 0 ? 'red' : 'black' }}>
-                            {totalHours.toFixed(1)} giờ
-                          </td>
-                          <td style={{ color: overtimeMinutes > 0 ? 'red' : 'black' }}>
-                            {overtimeMinutes > 0 ? `${overtimeMinutes} phút` : '0 phút'}
-                          </td>
-                          <td>{penaltyFee.toLocaleString()} đ</td>
-                          <td>
-                            <button
-                              className="extend-button"
-                              onClick={() => sendOvertimeWarning(transaction)}
-                            >
-                              Cảnh Báo
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-      </>
-    );
+  const handleShowWarningForm = () => setShowWarningForm(true);
+  const handleCloseWarningForm = () => {
+    setShowWarningForm(false);
+    setWarningSearchTerm('');
   };
+
+  const handleWarningSearch = (e) => setWarningSearchTerm(e.target.value);
+
+  const filteredWarnings = warnings.filter((warning) =>
+    warning.thanh_toan_id?.toString().includes(warningSearchTerm) ||
+    warning.trang_thai?.toLowerCase().includes(warningSearchTerm.toLowerCase())
+  );
 
   return (
     <div className="admin-page">
@@ -799,13 +730,11 @@ const AdminPage = ({ onLogout }) => {
             </button>
           </div>
           <div className="function-item">
-            <button className="function-button" onClick={handleShowOvertimePopup}>
+            <button className="function-button" onClick={handleShowWarningForm}>
               Cảnh Báo Quá Giờ
             </button>
           </div>
         </div>
-
-        {renderOvertimeWarnings()}
 
         {showAccountForm && (
           <div className="account-form">
@@ -1497,7 +1426,10 @@ const AdminPage = ({ onLogout }) => {
                     Tìm kiếm
                   </button>
                   <button className="admin-page-export-button">Xuất Excel</button>
-                  <button className="admin-page-close-button" onClick={handleCloseStatisticsPopup}>
+                  <button
+                    className="admin-page-close-button"
+                    onClick={handleCloseStatisticsPopup}
+                  >
                     Đóng
                   </button>
                 </div>
@@ -1537,7 +1469,7 @@ const AdminPage = ({ onLogout }) => {
                           <thead>
                             <tr>
                               <th>Loại xe</th>
-                              <th>Tổng</th>
+                              <th>Giá mỗi giờ</th>
                               <th>Tổng giờ thuê</th>
                               <th>Tổng tiền</th>
                             </tr>
@@ -1546,8 +1478,8 @@ const AdminPage = ({ onLogout }) => {
                             {statistics.parkingStats.map((stat, index) => (
                               <tr key={index}>
                                 <td>{stat.type || 'N/A'}</td>
-                                <td>{(stat.pricePerHour || 0).toLocaleString()}</td>
-                                <td>{(stat.totalHours || 0).toLocaleString()} Giờ</td>
+                                <td>{(stat.pricePerHour || 0).toLocaleString()} VNĐ/h</td>
+                                <td>{(stat.totalHours || 0).toLocaleString()}</td>
                                 <td>{(stat.totalRevenue || 0).toLocaleString()} VNĐ</td>
                               </tr>
                             ))}
@@ -1565,6 +1497,55 @@ const AdminPage = ({ onLogout }) => {
                 <div className="admin-page-chart-container">
                   <Bar data={chartData} options={chartOptions} />
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {showWarningForm && (
+          <div className="warning-form">
+            <div className="warning-form-header">
+              <h3>Cảnh Báo Quá Giờ</h3>
+              <div className="form-actions">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm cảnh báo..."
+                  value={warningSearchTerm}
+                  onChange={handleWarningSearch}
+                  className="search-input"
+                />
+                <button className="close-button" onClick={handleCloseWarningForm}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+            <div className="table-container">
+              {warningLoading && <p>Đang tải danh sách cảnh báo...</p>}
+              {warningError && <p className="error">Lỗi: {warningError}</p>}
+              {!warningLoading && !warningError && warnings.length === 0 && <p>Không có cảnh báo nào.</p>}
+              {!warningLoading && !warningError && warnings.length > 0 && (
+                <table className="warning-table">
+                  <thead>
+                    <tr>
+                      <th>ID Cảnh Báo</th>
+                      <th>ID Thanh Toán</th>
+                      <th>Thời Gian Ra Khỏi Bãi</th>
+                      <th>Trạng Thái</th>
+                      <th>Thời Điểm Cảnh Báo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredWarnings.map((warning) => (
+                      <tr key={warning.id}>
+                        <td>{warning.id}</td>
+                        <td>{warning.thanh_toan_id}</td>
+                        <td>{warning.thoi_gian_ra_khoi_bai || 'N/A'}</td>
+                        <td>{warning.trang_thai}</td>
+                        <td>{warning.thoi_diem_canh_bao || 'N/A'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>
