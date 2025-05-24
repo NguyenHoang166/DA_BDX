@@ -4,30 +4,116 @@ import parkingLotImage from '../assets/image 1.png';
 import './CustomerPage.css';
 import Chatbox from '../components/Chatbox';
 
-function CustomerPage() {
+const API_BASE_URL = 'http://localhost:5000'; // URL backend
+
+// Hàm gọi API với xử lý token và lỗi
+const fetchWithAuth = async (url, options = {}, navigate) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.warn('Không tìm thấy token, chuyển hướng đến trang đăng nhập.');
+    if (navigate) navigate('/login');
+    throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+    ...options.headers,
+  };
+
+  console.log(`[API CALL] Gọi API: ${url}`);
+  console.log(`[API CALL] Headers:`, headers);
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (!response.ok) {
+    let errorMessage = `Gọi API thất bại: ${response.status} ${response.statusText}`;
+    if (response.status === 401) {
+      console.warn('Token không hợp lệ hoặc hết hạn, chuyển hướng đến trang đăng nhập.');
+      localStorage.removeItem('token');
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('username');
+      if (navigate) navigate('/login');
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    try {
+      const error = await response.json();
+      errorMessage = error.error || error.message || errorMessage;
+    } catch (e) {
+      console.error('Lỗi khi parse phản hồi:', e);
+    }
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
+  console.log(`[API RESPONSE] Dữ liệu trả về từ ${url}:`, data);
+  return data;
+};
+
+function DynamsoftCustomerPage() {
   const [vehicleType, setVehicleType] = useState('Xe máy');
   const [startDate, setStartDate] = useState('2025-03-02T07:00');
   const [endDate, setEndDate] = useState('2025-03-02T13:00');
-  const [showPopup, setShowPopup] = useState(false); // Trạng thái cho popup
+  const [showPopup, setShowPopup] = useState(false);
+  const [warnings, setWarnings] = useState([]);
+  const [warningLoading, setWarningLoading] = useState(false);
+  const [warningError, setWarningError] = useState(null);
   const navigate = useNavigate();
+
+  // Kiểm tra đăng nhập khi component mount
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    if (!isLoggedIn) {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   // Hàm kiểm tra thời gian quá giờ
   const checkOverdue = () => {
     const currentTime = new Date();
     const endTime = new Date(endDate);
     if (currentTime > endTime) {
-      console.log('Thời gian quá hạn!'); // Có thể thông báo qua console hoặc xử lý khác
+      console.log('Thời gian quá hạn!');
     }
   };
 
-  // Sử dụng useEffect để kiểm tra thời gian định kỳ
+  // Kiểm tra thời gian định kỳ
   useEffect(() => {
     const interval = setInterval(() => {
       checkOverdue();
-    }, 60000); // Kiểm tra mỗi phút (60000ms)
+    }, 60000); // Kiểm tra mỗi phút
 
-    return () => clearInterval(interval); // Dọn dẹp interval khi component unmount
+    return () => clearInterval(interval);
   }, [endDate]);
+
+  // Hàm lấy danh sách cảnh báo
+  const fetchWarnings = async () => {
+    setWarningLoading(true);
+    setWarningError(null);
+    try {
+      console.log('[FETCH WARNINGS] Bắt đầu lấy danh sách cảnh báo...');
+      const data = await fetchWithAuth(`${API_BASE_URL}/api/canh-bao`, {}, navigate);
+      console.log('[FETCH WARNINGS] Danh sách cảnh báo:', data);
+
+      if (!Array.isArray(data)) {
+        throw new Error('Dữ liệu cảnh báo không hợp lệ, không phải mảng.');
+      }
+
+      setWarnings(data); // Backend đã lọc theo username
+    } catch (err) {
+      console.error('[FETCH WARNINGS] Lỗi khi lấy danh sách cảnh báo:', err);
+      setWarningError(err.message);
+    } finally {
+      setWarningLoading(false);
+    }
+  };
+
+  // Gọi API khi mở popup
+  useEffect(() => {
+    if (showPopup) {
+      fetchWarnings();
+    }
+  }, [showPopup]);
 
   const handleBookNow = (selectedVehicleType = vehicleType) => {
     const bookingData = {
@@ -45,22 +131,35 @@ function CustomerPage() {
     handleBookNow();
   };
 
-  // Hàm hiển thị/ẩn popup khi nhấn nút
   const togglePopup = () => {
     setShowPopup(!showPopup);
   };
 
-  // Dữ liệu mẫu cho bảng
-  const transactionData = [
-    {
-      maGiaoDich: 'TX1002',
-      userId: 'USER#456',
-      thoiGianBatDau: '23/05/2025 03:00',
-      thoiGianKetThuc: '23/05/2025 03:29',
-      quaThoiGian: '1 tiếng',
-      phiThem: '10,500',
-    },
-  ];
+  // Hàm tính thời gian quá giờ và phí phạt
+  const calculateOverdue = (warning) => {
+    if (!warning.thoi_gian_ra_khoi_bai || !warning.thoi_diem_canh_bao) {
+      return { overdueTime: 'N/A', penaltyFee: '0' };
+    }
+
+    const exitTime = new Date(warning.thoi_gian_ra_khoi_bai);
+    const warningTime = new Date(warning.thoi_diem_canh_bao);
+    const diffMs = warningTime - exitTime;
+    const overdueHours = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60))); // Làm tròn lên
+
+    // Phí phạt dựa trên vehicleType
+    const penaltyRates = {
+      'Xe máy': 10000,
+      'Ô tô': 30000,
+      'Xe tải': 50000,
+    };
+    const vehicleType = warning.vehicleType || 'Xe máy'; // Lấy từ thanh_toan
+    const penaltyFee = overdueHours * (penaltyRates[vehicleType] || 10000);
+
+    return {
+      overdueTime: overdueHours > 0 ? `${overdueHours} giờ` : '0 giờ',
+      penaltyFee: penaltyFee.toLocaleString(),
+    };
+  };
 
   return (
     <div className="main-container">
@@ -73,7 +172,7 @@ function CustomerPage() {
         </p>
       </section>
 
-      {/* Hình ảnh bãi đỗ xe (hình nền) */}
+      {/* Hình ảnh bãi đỗ xe */}
       <img src={parkingLotImage} alt="Bãi đỗ xe" className="parking-image" />
 
       {/* Form đặt chỗ */}
@@ -187,35 +286,44 @@ function CustomerPage() {
         Cảnh báo
       </button>
 
-      {/* Popup hiển thị bảng */}
+      {/* Popup hiển thị bảng cảnh báo */}
       {showPopup && (
         <div className="transaction-popup">
-          <table className="transaction-table">
-            <thead>
-              <tr>
-               <th>Mã Giao Dịch</th>
-                      <th>User name</th>
-                      <th>Thời Gian Bắt Đầu</th>
-                      <th>Thời Gian Kết Thúc</th>
-                      <th>Thời Gian Ra Khỏi Bãi</th>
-                      <th>Tổng Giờ Đỗ</th>
-                      <th>Quá Giờ</th>
-                      <th>Phí Phạt (VNĐ)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactionData.map((item, index) => (
-                <tr key={index}>
-                  <td>{item.maGiaoDich}</td>
-                  <td>{item.userId}</td>
-                  <td>{item.thoiGianBatDau}</td>
-                  <td>{item.thoiGianKetThuc}</td>
-                  <td>{item.ghiChu}</td>
-                  <td>{item.phiThem}</td>
+          <h3>Cảnh Báo Quá Giờ</h3>
+          {warningLoading && <p>Đang tải danh sách cảnh báo...</p>}
+          {warningError && <p className="error">Lỗi: {warningError}</p>}
+          {!warningLoading && !warningError && warnings.length === 0 && <p>Không có cảnh báo nào.</p>}
+          {!warningLoading && !warningError && warnings.length > 0 && (
+            <table className="transaction-table">
+              <thead>
+                <tr>
+                  <th>Mã Giao Dịch</th>
+                  <th>Loại Xe</th>
+                  <th>Thời Gian Ra Khỏi Bãi</th>
+                  <th>Trạng Thái</th>
+                  <th>Thời Điểm Cảnh Báo</th>
+                  <th>Quá Giờ</th>
+                  <th>Phí Phạt (VNĐ)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {warnings.map((warning) => {
+                  const { overdueTime, penaltyFee } = calculateOverdue(warning);
+                  return (
+                    <tr key={warning.id} className={warning.trang_thai === 'vuot_gio' ? 'vuot-gio' : ''}>
+                      <td>{warning.thanh_toan_id || 'N/A'}</td>
+                      <td>{warning.vehicleType || 'N/A'}</td>
+                      <td>{warning.thoi_gian_ra_khoi_bai || 'N/A'}</td>
+                      <td>{warning.trang_thai === 'vuot_gio' ? 'Quá Giờ' : 'Chưa Xác Định'}</td>
+                      <td>{warning.thoi_diem_canh_bao || 'N/A'}</td>
+                      <td>{overdueTime}</td>
+                      <td>{penaltyFee}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
           <button className="close-popup-btn" onClick={togglePopup}>
             Đóng
           </button>
@@ -228,4 +336,4 @@ function CustomerPage() {
   );
 }
 
-export default CustomerPage;
+export default DynamsoftCustomerPage;
