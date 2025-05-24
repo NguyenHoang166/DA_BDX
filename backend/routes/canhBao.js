@@ -20,14 +20,16 @@ const verifyToken = (req, res, next) => {
   next();
 };
 
-// Endpoint kiểm tra và cập nhật cảnh báo vượt giờ
+// Lưu trữ các kết nối SSE theo username
+const clients = new Map(); // Map<username, Set<response>>
+
 router.get('/check-canh-bao', verifyToken, async (req, res) => {
   try {
     const maxTimeLimit = 2 * 60 * 60 * 1000; // 2 giờ
-    const currentTime = new Date(); // Thời gian hiện tại
+    const currentTime = new Date();
 
     console.log('Bắt đầu kiểm tra cảnh báo vượt giờ...', currentTime);
-    const [rows] = await db.execute('SELECT * FROM canh_bao WHERE trang_thai = ?', ['chu_xac_dinh']);
+    const [rows] = await db.execute('SELECT * FROM canh_bao WHERE trang_thai = ?', ['hop_le']);
     console.log('Số bản ghi cần kiểm tra:', rows ? rows.length : 0);
 
     if (!Array.isArray(rows)) {
@@ -50,7 +52,7 @@ router.get('/check-canh-bao', verifyToken, async (req, res) => {
       const timeDiff = currentTime - timeOut;
       console.log(`Bản ghi ID ${row.id} - Chênh lệch: ${timeDiff / (1000 * 60)} phút`);
 
-      if (timeDiff > maxTimeLimit && row.trang_thai === 'chu_xac_dinh') {
+      if (timeDiff > maxTimeLimit && row.trang_thai === 'hop_le') {
         const formattedTime = currentTime.toISOString().slice(0, 19).replace('T', ' ');
         await db.execute('UPDATE canh_bao SET trang_thai = ?, thoi_diem_canh_bao = ? WHERE id = ?', ['vuot_gio', formattedTime, row.id]);
         console.log(`Cập nhật ID ${row.id} thành 'vuot_gio' tại ${formattedTime}`);
@@ -65,7 +67,7 @@ router.get('/check-canh-bao', verifyToken, async (req, res) => {
 });
 
 // Endpoint lấy danh sách cảnh báo
-router.get('/', verifyToken, async (req, res) => { // Đổi từ '/canh-bao' thành '/' để khớp với prefix '/api/canh-bao'
+router.get('/', verifyToken, async (req, res) => {
   try {
     console.log('Lấy danh sách cảnh báo...');
     const [rows] = await db.execute('SELECT * FROM canh_bao');
@@ -74,15 +76,89 @@ router.get('/', verifyToken, async (req, res) => { // Đổi từ '/canh-bao' th
       return res.status(500).json({ error: 'Dữ liệu không hợp lệ từ cơ sở dữ liệu' });
     }
 
-    if (rows.length === 0) {
-      console.log('Không có dữ liệu cảnh báo');
-      return res.status(200).json([]); // Trả về mảng rỗng
-    }
-
     console.log('Số lượng cảnh báo:', rows.length);
     res.status(200).json(rows);
   } catch (error) {
     console.error('Lỗi lấy danh sách cảnh báo:', error);
+    res.status(500).json({ error: 'Lỗi server', details: error.message });
+  }
+});
+
+// Endpoint SSE để gửi cảnh báo thời gian thực
+router.get('/stream', verifyToken, (req, res) => {
+  const username = req.query.username;
+  if (!username) {
+    return res.status(400).json({ error: 'Thiếu username trong query' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  // Lưu kết nối client
+  if (!clients.has(username)) {
+    clients.set(username, new Set());
+  }
+  clients.get(username).add(res);
+
+  // Gửi keep-alive để duy trì kết nối
+  const keepAlive = setInterval(() => {
+    res.write(`data: {"type": "keep-alive"}\n\n`);
+  }, 25000);
+
+  // Xử lý khi client ngắt kết nối
+  req.on('close', () => {
+    clients.get(username).delete(res);
+    if (clients.get(username).size === 0) {
+      clients.delete(username);
+    }
+    clearInterval(keepAlive);
+    res.end();
+  });
+});
+
+// Endpoint gửi cảnh báo
+router.post('/send', verifyToken, async (req, res) => {
+  try {
+    const warningData = req.body;
+    if (!warningData.thanh_toan_id || !warningData.message) {
+      return res.status(400).json({ error: 'Thiếu thông tin thanh_toan_id hoặc message' });
+    }
+
+    // Lấy username từ bảng thanh_toan dựa trên thanh_toan_id
+    const [thanhToan] = await db.execute('SELECT username FROM thanh_toan WHERE id = ?', [warningData.thanh_toan_id]);
+    if (!thanhToan || thanhToan.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy giao dịch' });
+    }
+    const username = thanhToan[0].username;
+
+    // Lưu cảnh báo vào cơ sở dữ liệu
+    const thoi_diem_canh_bao = warningData.thoi_diem_canh_bao || new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const [result] = await db.execute(
+      'INSERT INTO canh_bao (thanh_toan_id, message, thoi_diem_canh_bao, trang_thai, username) VALUES (?, ?, ?, ?, ?)',
+      [warningData.thanh_toan_id, warningData.message, thoi_diem_canh_bao, warningData.trang_thai || 'hop_le', username]
+    );
+
+    const newWarning = {
+      id: result.insertId,
+      thanh_toan_id: warningData.thanh_toan_id,
+      message: warningData.message,
+      thoi_diem_canh_bao,
+      trang_thai: warningData.trang_thai || 'hop_le',
+      username,
+    };
+
+    // Gửi cảnh báo qua SSE đến client tương ứng
+    if (clients.has(username)) {
+      clients.get(username).forEach((client) => {
+        client.write(`data: ${JSON.stringify(newWarning)}\n\n`);
+      });
+    }
+
+    res.status(200).json({ message: 'Gửi cảnh báo thành công', warning: newWarning });
+  } catch (error) {
+    console.error('Lỗi khi gửi cảnh báo:', error);
     res.status(500).json({ error: 'Lỗi server', details: error.message });
   }
 });

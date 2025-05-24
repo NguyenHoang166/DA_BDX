@@ -125,7 +125,7 @@ const PaymentResultPage = () => {
                 duration *
                 parsedData.selectedPositions.length,
               paymentMethod: "vnpay",
-              qrCode: "http://192.168.94.29/enter",
+              qrCode: "http://192.168.1.171/enter",
             };
 
             setOrderDetails(newOrder);
@@ -177,7 +177,7 @@ const PaymentResultPage = () => {
               duration *
               parsedData.selectedPositions.length,
             paymentMethod: "cash",
-            qrCode: "http://192.168.94.29/enter",
+            qrCode: "http://192.168.1.172/enter",
           };
 
           setOrderDetails(newOrder);
@@ -304,8 +304,7 @@ const PaymentResultPage = () => {
               <div className="booking-details">
                 <h3>Mã QR để mở khóa cổng</h3>
                 <div className="detail-row">
-                  <span>Mã QR:</span>
-                  <span>{orderDetails.qrCode}</span>
+                  <span>Mã QR:</span>            
                 </div>
                 {orderDetails.qrCode && (
                   <div className="qr-code-container">

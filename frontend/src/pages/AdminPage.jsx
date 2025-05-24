@@ -192,9 +192,9 @@ const AdminPage = ({ onLogout }) => {
     setStatisticsError(null);
     try {
       let url = `${API_BASE_URL}/api/statistics`;
-if (start && end) {
-  url += `?startDate=${start}&endDate=${end}`;
-}
+      if (start && end) {
+        url += `?startDate=${start}&endDate=${end}`;
+      }
       console.log(`[FETCH STATISTICS] Gọi API thống kê: ${url}`);
       const data = await fetchWithAuth(url, {}, navigate);
       if (!data || typeof data !== 'object') {
@@ -224,7 +224,7 @@ if (start && end) {
       console.log('[FETCH WARNINGS] Kết quả kiểm tra cảnh báo:', checkResponse);
 
       console.log('[FETCH WARNINGS] Bắt đầu lấy danh sách cảnh báo...');
-      const data = await fetchWithAuth(`${API_BASE_URL}/api/canh-bao`, {}, navigate); // Sửa đường dẫn
+      const data = await fetchWithAuth(`${API_BASE_URL}/api/canh-bao`, {}, navigate);
       console.log('[FETCH WARNINGS] Danh sách cảnh báo:', data);
 
       if (!Array.isArray(data)) {
@@ -237,6 +237,34 @@ if (start && end) {
       alert(`Lỗi khi lấy danh sách cảnh báo: ${err.message}`);
     } finally {
       setWarningLoading(false);
+    }
+  };
+
+  const handleSendWarning = async (warning = null) => {
+    try {
+      const warningData = warning || {
+        thanh_toan_id: null,
+        message: 'Bạn đã quá giờ đỗ xe, vui lòng rời bãi đỗ!',
+        thoi_diem_canh_bao: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        trang_thai: 'Chưa xử lý',
+      };
+
+      console.log('[SEND WARNING] Gửi cảnh báo:', warningData);
+
+      const response = await fetchWithAuth(
+        `${API_BASE_URL}/api/canh-bao/send`,
+        {
+          method: 'POST',
+          body: JSON.stringify(warningData),
+        },
+        navigate
+      );
+
+      alert('Gửi cảnh báo thành công!');
+      fetchWarnings();
+    } catch (err) {
+      console.error('[SEND WARNING] Lỗi khi gửi cảnh báo:', err);
+      alert(`Lỗi khi gửi cảnh báo: ${err.message}`);
     }
   };
 
@@ -325,7 +353,7 @@ if (start && end) {
     fetchFeedbacks();
     fetchTransactions();
 
-    const socket = new WebSocket('ws://192.168.1.152:81');
+    const socket = new WebSocket('ws://192.168.1.172:81');
     socket.onopen = () => console.log('[WEBSOCKET] Connected to ESP32 WebSocket');
     socket.onmessage = (event) => {
       try {
@@ -386,13 +414,13 @@ if (start && end) {
     });
   };
 
-const handleImageChange = (e, setFunction, obj) => {
-  const file = e.target.files[0];
-  if (file) {
-    const imageUrl = URL.createObjectURL(file);
-    setFunction({ ...obj, image: imageUrl });
-  }
-};
+  const handleImageChange = (e, setFunction, obj) => {
+    const file = e.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setFunction({ ...obj, image: imageUrl });
+    }
+  };
 
   const handleAddAccount = async (e) => {
     e.preventDefault();
@@ -1514,6 +1542,12 @@ const handleImageChange = (e, setFunction, obj) => {
                   onChange={handleWarningSearch}
                   className="search-input"
                 />
+                <button
+                  className="send-warning-button"
+                  onClick={() => handleSendWarning()}
+                >
+                  Gửi Cảnh Báo
+                </button>
                 <button className="close-button" onClick={handleCloseWarningForm}>
                   Đóng
                 </button>
@@ -1529,9 +1563,9 @@ const handleImageChange = (e, setFunction, obj) => {
                     <tr>
                       <th>ID Cảnh Báo</th>
                       <th>ID Thanh Toán</th>
-                      <th>Thời Gian Ra Khỏi Bãi</th>
+                      <th>Thời Gian Kết Thúc</th>
                       <th>Trạng Thái</th>
-                      <th>Thời Điểm Cảnh Báo</th>
+                      <th>Thời Gian Ra Khỏi Bãi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1542,6 +1576,14 @@ const handleImageChange = (e, setFunction, obj) => {
                         <td>{warning.thoi_gian_ra_khoi_bai || 'N/A'}</td>
                         <td>{warning.trang_thai}</td>
                         <td>{warning.thoi_diem_canh_bao || 'N/A'}</td>
+                        <td>
+                          <button
+                            className="action-icon send-warning"
+                            onClick={() => handleSendWarning(warning)}
+                            title="Gửi Cảnh Báo"
+                          >
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

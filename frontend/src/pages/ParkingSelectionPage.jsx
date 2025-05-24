@@ -111,7 +111,7 @@ export default function ParkingSelectionPage() {
   }, []);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://192.168.94.29:81");
+    const socket = new WebSocket("ws://192.168.1.172:81");
 
     socket.onopen = () => {
       console.log("Connected to ESP32 WebSocket");
@@ -325,7 +325,7 @@ export default function ParkingSelectionPage() {
       return;
     }
 
-    const defaultQrCode = "http://192.168.94.29/enter";
+    const defaultQrCode = "http:/192.168.1.172/enter";
     const duration = calculateDuration();
     const newOrder = {
       id: orders.length + 1,
@@ -900,7 +900,7 @@ export default function ParkingSelectionPage() {
               <div className="booking-details">
                 <div className="detail-row">
                   <span>Mã QR:</span>
-                  <span>{qrCode}</span>
+                  <span></span>
                 </div>
                 {qrCode && (
                   <div className="qr-code-container">

@@ -299,9 +299,9 @@ function DynamsoftCustomerPage() {
                 <tr>
                   <th>Mã Giao Dịch</th>
                   <th>Loại Xe</th>
-                  <th>Thời Gian Ra Khỏi Bãi</th>
+                  <th>Thời Gian Kết Thúc</th>
                   <th>Trạng Thái</th>
-                  <th>Thời Điểm Cảnh Báo</th>
+                  <th>Thời Gian Ra Khỏi Bãi</th>
                   <th>Quá Giờ</th>
                   <th>Phí Phạt (VNĐ)</th>
                 </tr>

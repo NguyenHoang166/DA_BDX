@@ -41,4 +41,40 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Thêm đánh giá mới
+router.post('/', async (req, res) => {
+  try {
+    const { user_id, bai_do_id, danh_gia, phan_hoi, ngay_nhan } = req.body;
+
+    // Kiểm tra dữ liệu đầu vào
+    if (!user_id || !bai_do_id || !danh_gia || !phan_hoi) {
+      return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+    }
+
+    // Kiểm tra xem user_id có tồn tại trong bảng users
+    const [user] = await db.query('SELECT id FROM users WHERE id = ?', [user_id]);
+    if (!user || user.length === 0) {
+      return res.status(400).json({ message: 'Người dùng không tồn tại' });
+    }
+
+    // Kiểm tra xem bai_do_id có tồn tại (nếu bạn có bảng parking_lots)
+    const [parkingLot] = await db.query('SELECT id FROM parking_lots WHERE id = ?', [bai_do_id]);
+    if (!parkingLot || parkingLot.length === 0) {
+      return res.status(400).json({ message: 'Bãi đỗ xe không tồn tại' });
+    }
+
+    // Thêm đánh giá vào cơ sở dữ liệu
+    const query = `
+      INSERT INTO danh_gia_phan_hoi (user_id, bai_do_id, danh_gia, phan_hoi, ngay_nhan)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    await db.query(query, [user_id, bai_do_id, danh_gia, phan_hoi, ngay_nhan]);
+
+    res.status(201).json({ message: 'Đánh giá đã được lưu thành công' });
+  } catch (err) {
+    console.error('Lỗi khi lưu đánh giá:', err.message);
+    res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+});
+
 module.exports = router;
