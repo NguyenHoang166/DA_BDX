@@ -125,7 +125,7 @@ const PaymentResultPage = () => {
                 duration *
                 parsedData.selectedPositions.length,
               paymentMethod: "vnpay",
-              qrCode: "http://192.168.1.171/enter",
+              qrCode: "http://192.168.1.195/enter",
             };
 
             setOrderDetails(newOrder);
@@ -177,7 +177,7 @@ const PaymentResultPage = () => {
               duration *
               parsedData.selectedPositions.length,
             paymentMethod: "cash",
-            qrCode: "http://192.168.1.172/enter",
+            qrCode: "http://192.168.1.195/enter",
           };
 
           setOrderDetails(newOrder);

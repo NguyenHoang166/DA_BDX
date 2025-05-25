@@ -122,43 +122,28 @@ router.get('/stream', verifyToken, (req, res) => {
 router.post('/send', verifyToken, async (req, res) => {
   try {
     const warningData = req.body;
-    if (!warningData.thanh_toan_id || !warningData.message) {
-      return res.status(400).json({ error: 'Thiếu thông tin thanh_toan_id hoặc message' });
+    if (!warningData.message || !warningData.username) {
+      return res.status(400).json({ error: 'Thiếu thông tin message hoặc username' });
     }
 
-    // Lấy username từ bảng thanh_toan dựa trên thanh_toan_id
-    const [thanhToan] = await db.execute('SELECT username FROM thanh_toan WHERE id = ?', [warningData.thanh_toan_id]);
-    if (!thanhToan || thanhToan.length === 0) {
-      return res.status(404).json({ error: 'Không tìm thấy giao dịch' });
-    }
-    const username = thanhToan[0].username;
-
-    // Lưu cảnh báo vào cơ sở dữ liệu
-    const thoi_diem_canh_bao = warningData.thoi_diem_canh_bao || new Date().toISOString().slice(0, 19).replace('T', ' ');
-    const [result] = await db.execute(
-      'INSERT INTO canh_bao (thanh_toan_id, message, thoi_diem_canh_bao, trang_thai, username) VALUES (?, ?, ?, ?, ?)',
-      [warningData.thanh_toan_id, warningData.message, thoi_diem_canh_bao, warningData.trang_thai || 'hop_le', username]
-    );
-
-    const newWarning = {
-      id: result.insertId,
-      thanh_toan_id: warningData.thanh_toan_id,
+    const notification = {
       message: warningData.message,
-      thoi_diem_canh_bao,
-      trang_thai: warningData.trang_thai || 'hop_le',
-      username,
+      username: warningData.username,
+      thoi_diem_canh_bao: warningData.thoi_diem_canh_bao || new Date().toISOString().slice(0, 19).replace('T', ' '),
     };
 
-    // Gửi cảnh báo qua SSE đến client tương ứng
-    if (clients.has(username)) {
-      clients.get(username).forEach((client) => {
-        client.write(`data: ${JSON.stringify(newWarning)}\n\n`);
+    // Gửi thông báo qua SSE đến client tương ứng
+    if (clients.has(notification.username)) {
+      clients.get(notification.username).forEach((client) => {
+        client.write(`data: ${JSON.stringify(notification)}\n\n`);
       });
+    } else {
+      console.warn(`Không tìm thấy client với username: ${notification.username}`);
     }
 
-    res.status(200).json({ message: 'Gửi cảnh báo thành công', warning: newWarning });
+    res.status(200).json({ message: 'Gửi thông báo thành công', notification });
   } catch (error) {
-    console.error('Lỗi khi gửi cảnh báo:', error);
+    console.error('Lỗi khi gửi thông báo:', error);
     res.status(500).json({ error: 'Lỗi server', details: error.message });
   }
 });

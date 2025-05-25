@@ -242,20 +242,36 @@ const AdminPage = ({ onLogout }) => {
 
   const handleSendWarning = async (warning = null) => {
     try {
-      const warningData = warning || {
-        thanh_toan_id: null,
-        message: 'Bạn đã quá giờ đỗ xe, vui lòng rời bãi đỗ!',
+      let usernameToNotify;
+
+      // Nếu có warning (từ bảng), lấy username từ thanh_toan_id
+      if (warning && warning.thanh_toan_id) {
+        const [thanhToan] = await fetchWithAuth(
+          `${API_BASE_URL}/api/thanh-toan/${warning.thanh_toan_id}`,
+          {},
+          navigate
+        );
+        if (!thanhToan || !thanhToan.username) {
+          throw new Error('Không tìm thấy thông tin giao dịch hoặc username.');
+        }
+        usernameToNotify = thanhToan.username;
+      } else {
+        throw new Error('Không có thông tin giao dịch để gửi cảnh báo.');
+      }
+
+      const warningMessage = {
+        message: 'Bạn đã đỗ xe quá giờ, vui lòng di chuyển xe ra khỏi bãi',
+        username: usernameToNotify,
         thoi_diem_canh_bao: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        trang_thai: 'Chưa xử lý',
       };
 
-      console.log('[SEND WARNING] Gửi cảnh báo:', warningData);
+      console.log('[SEND WARNING] Gửi cảnh báo:', warningMessage);
 
-      const response = await fetchWithAuth(
+      await fetchWithAuth(
         `${API_BASE_URL}/api/canh-bao/send`,
         {
           method: 'POST',
-          body: JSON.stringify(warningData),
+          body: JSON.stringify(warningMessage),
         },
         navigate
       );
@@ -353,7 +369,7 @@ const AdminPage = ({ onLogout }) => {
     fetchFeedbacks();
     fetchTransactions();
 
-    const socket = new WebSocket('ws://192.168.1.172:81');
+    const socket = new WebSocket('ws://192.168.1.195:81');
     socket.onopen = () => console.log('[WEBSOCKET] Connected to ESP32 WebSocket');
     socket.onmessage = (event) => {
       try {
@@ -1103,9 +1119,6 @@ const AdminPage = ({ onLogout }) => {
             <div className="parking-list-header">
               <h3>Quản Lý Bãi</h3>
               <div className="form-actions">
-                <button className="add-account-button" onClick={handleShowAddParkingLotForm}>
-                  Thêm Bãi Đỗ
-                </button>
                 <button className="close-button" onClick={handleCloseParkingListForm}>
                   Đóng
                 </button>
@@ -1544,6 +1557,7 @@ const AdminPage = ({ onLogout }) => {
                 />
                 <button
                   className="send-warning-button"
+                  disabled={true} // Vô hiệu hóa nút tổng quát vì không cần
                   onClick={() => handleSendWarning()}
                 >
                   Gửi Cảnh Báo
@@ -1566,15 +1580,16 @@ const AdminPage = ({ onLogout }) => {
                       <th>Thời Gian Kết Thúc</th>
                       <th>Trạng Thái</th>
                       <th>Thời Gian Ra Khỏi Bãi</th>
+                      <th>Chức Năng</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredWarnings.map((warning) => (
                       <tr key={warning.id}>
                         <td>{warning.id}</td>
-                        <td>{warning.thanh_toan_id}</td>
+                        <td>{warning.thanh_toan_id || 'N/A'}</td>
                         <td>{warning.thoi_gian_ra_khoi_bai || 'N/A'}</td>
-                        <td>{warning.trang_thai}</td>
+                        <td>{warning.trang_thai || 'N/A'}</td>
                         <td>{warning.thoi_diem_canh_bao || 'N/A'}</td>
                         <td>
                           <button
@@ -1582,6 +1597,7 @@ const AdminPage = ({ onLogout }) => {
                             onClick={() => handleSendWarning(warning)}
                             title="Gửi Cảnh Báo"
                           >
+                            📤
                           </button>
                         </td>
                       </tr>

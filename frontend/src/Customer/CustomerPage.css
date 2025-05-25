@@ -342,3 +342,11 @@
 .close-popup-btn:hover {
   background-color: #cc0000;
 }
+.overdue-message {
+  color: red;
+  font-weight: bold;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #ffe6e6;
+  border-radius: 5px;
+}

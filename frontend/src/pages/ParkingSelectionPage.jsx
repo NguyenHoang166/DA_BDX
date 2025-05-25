@@ -111,7 +111,7 @@ export default function ParkingSelectionPage() {
   }, []);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://192.168.1.172:81");
+    const socket = new WebSocket("ws://192.168.94.29:81");
 
     socket.onopen = () => {
       console.log("Connected to ESP32 WebSocket");
@@ -255,6 +255,7 @@ export default function ParkingSelectionPage() {
   const openReviewModal = (lot) => {
     setSelectedLotForReview(lot);
     setReview({ rating: 0, comment: "" });
+    setErrorMessage("");
     setShowReviewModal(true);
   };
 
@@ -262,6 +263,7 @@ export default function ParkingSelectionPage() {
     setShowReviewModal(false);
     setSelectedLotForReview(null);
     setReview({ rating: 0, comment: "" });
+    setErrorMessage("");
   };
 
   const handleCustomerInfoChange = (e) => {
@@ -278,7 +280,7 @@ export default function ParkingSelectionPage() {
     setReview({ ...review, rating });
   };
 
-  const handleSubmitReview = () => {
+  const handleSubmitReview = async () => {
     if (review.rating === 0) {
       alert("Vui lòng chọn số sao đánh giá!");
       return;
@@ -288,14 +290,52 @@ export default function ParkingSelectionPage() {
       return;
     }
 
-    console.log("Review submitted:", {
-      parkingLot: selectedLotForReview.name,
-      rating: review.rating,
-      comment: review.comment,
-    });
+    try {
+      setIsProcessing(true);
+      setErrorMessage("");
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Không tìm thấy token. Vui lòng đăng nhập lại.");
+      }
 
-    alert("Cảm ơn bạn đã gửi đánh giá!");
-    closeReviewModal();
+      const reviewData = {
+        user_id: customerInfo.id,
+        bai_do_id: selectedLotForReview.id,
+        danh_gia: review.rating,
+        phan_hoi: review.comment,
+        ngay_nhan: new Date().toISOString(),
+      };
+
+      console.log("Sending review to backend:", reviewData);
+
+      const response = await axios.post(
+        "http://localhost:5000/api/feedback/reviews",
+        reviewData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Review submitted successfully:", response.data);
+      alert("Cảm ơn bạn đã gửi đánh giá!");
+      closeReviewModal();
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      let errorMsg = error.response?.data?.message || "Không thể gửi đánh giá. Vui lòng thử lại.";
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+        window.location.href = "/login";
+      } else {
+        setErrorMessage(errorMsg);
+        alert(errorMsg);
+      }
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleConfirmBooking = () => {
@@ -325,7 +365,7 @@ export default function ParkingSelectionPage() {
       return;
     }
 
-    const defaultQrCode = "http:/192.168.1.172/enter";
+    const defaultQrCode = "http://192.168.94.29/enter";
     const duration = calculateDuration();
     const newOrder = {
       id: orders.length + 1,
@@ -900,7 +940,7 @@ export default function ParkingSelectionPage() {
               <div className="booking-details">
                 <div className="detail-row">
                   <span>Mã QR:</span>
-                  <span></span>
+                  <span>{qrCode}</span>
                 </div>
                 {qrCode && (
                   <div className="qr-code-container">
@@ -958,8 +998,28 @@ export default function ParkingSelectionPage() {
               />
             </div>
 
+            {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+            {isProcessing && (
+              <div
+                className="spinner"
+                style={{
+                  border: "4px solid #f3f3f3",
+                  borderTop: "4px solid #3498db",
+                  borderRadius: "50%",
+                  width: "30px",
+                  height: "30px",
+                  animation: "spin 1s linear infinite",
+                  margin: "20px auto",
+                }}
+              ></div>
+            )}
+
             <div className="modal-buttons">
-              <button className="confirm-btn" onClick={handleSubmitReview}>
+              <button
+                className="confirm-btn"
+                onClick={handleSubmitReview}
+                disabled={isProcessing}
+              >
                 Gửi đánh giá
               </button>
               <button className="cancel-btn" onClick={closeReviewModal}>

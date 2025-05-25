@@ -54,7 +54,7 @@ function Chatbox() {
     <div className="chatbox-container">
       {!isOpen && (
         <button className="chatbox-toggle" onClick={toggleChatbox}>
-          Chatbot
+          🤖
         </button>
       )}
       {isOpen && (

@@ -58,6 +58,7 @@ function DynamsoftCustomerPage() {
   const [warnings, setWarnings] = useState([]);
   const [warningLoading, setWarningLoading] = useState(false);
   const [warningError, setWarningError] = useState(null);
+  const [overdueMessage, setOverdueMessage] = useState(''); // Thêm state cho thông báo quá giờ
   const navigate = useNavigate();
 
   // Kiểm tra đăng nhập khi component mount
@@ -90,6 +91,7 @@ function DynamsoftCustomerPage() {
   const fetchWarnings = async () => {
     setWarningLoading(true);
     setWarningError(null);
+    setOverdueMessage(''); // Reset thông báo trước khi gọi API
     try {
       console.log('[FETCH WARNINGS] Bắt đầu lấy danh sách cảnh báo...');
       const data = await fetchWithAuth(`${API_BASE_URL}/api/canh-bao`, {}, navigate);
@@ -100,6 +102,12 @@ function DynamsoftCustomerPage() {
       }
 
       setWarnings(data); // Backend đã lọc theo username
+
+      // Kiểm tra nếu có cảnh báo trạng thái 'vuot_gio'
+      const hasOverdueWarning = data.some(warning => warning.trang_thai === 'vuot_gio');
+      if (hasOverdueWarning) {
+        setOverdueMessage('Bạn đã đỗ quá giờ, vui lòng di chuyển xe ra khỏi bãi.');
+      }
     } catch (err) {
       console.error('[FETCH WARNINGS] Lỗi khi lấy danh sách cảnh báo:', err);
       setWarningError(err.message);
@@ -290,6 +298,8 @@ function DynamsoftCustomerPage() {
       {showPopup && (
         <div className="transaction-popup">
           <h3>Cảnh Báo Quá Giờ</h3>
+          {/* Hiển thị thông báo nếu có cảnh báo quá giờ */}
+          {overdueMessage && <p className="overdue-message">{overdueMessage}</p>}
           {warningLoading && <p>Đang tải danh sách cảnh báo...</p>}
           {warningError && <p className="error">Lỗi: {warningError}</p>}
           {!warningLoading && !warningError && warnings.length === 0 && <p>Không có cảnh báo nào.</p>}
